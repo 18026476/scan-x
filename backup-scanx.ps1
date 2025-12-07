@@ -35,8 +35,8 @@ if (-not $existingEmail) {
     git config user.email "18026476kh@gmail.com"
 }
 
-# 4. Ensure remote 'origin' is configured
-$remoteUrl = "https://github.com/18026476/scanx_app.git"
+# 4. Ensure remote 'origin' points to the RIGHT repo
+$remoteUrl = "https://github.com/18026476/scan-x.git"
 
 try {
     $origin = git remote get-url origin 2>$null
@@ -47,6 +47,9 @@ try {
 if (-not $origin) {
     Write-Host "Adding remote 'origin' -> $remoteUrl" -ForegroundColor Yellow
     git remote add origin $remoteUrl
+} elseif ($origin -ne $remoteUrl) {
+    Write-Host "Updating remote 'origin' from $origin to $remoteUrl" -ForegroundColor Yellow
+    git remote set-url origin $remoteUrl
 } else {
     Write-Host "Remote 'origin' already set to $origin" -ForegroundColor Green
 }
