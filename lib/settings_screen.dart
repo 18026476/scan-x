@@ -1,9 +1,7 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// SCAN-X Settings Screen (Final Version)
-/// Now with persistent storage using SharedPreferences.
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);
 
@@ -88,7 +86,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   AlertSensitivity _alertSensitivity = AlertSensitivity.medium;
 
   // 5. Data & Logs
-  int _logRetentionDays = 30; // 7, 30, 90, 0 (0 = never)
+  int _logRetentionDays = 30;
   bool _anonymousUsageAnalytics = false;
 
   // 6. App Preferences
@@ -100,9 +98,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _autoUpdateApp = true;
   bool _notifyBeforeUpdate = true;
   bool _betaUpdates = false;
-
-  // 7. Tools & Utilities (purely navigational hooks)
-  // nothing to store yet; they’ll be ListTiles with onTap
 
   // 8. Experimental & AI Features
   bool _aiAssistantEnabled = true;
@@ -123,6 +118,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.initState();
     _initAndLoadSettings();
   }
+
+  // ---------- PERSISTENCE LAYER ----------
 
   Future<void> _initAndLoadSettings() async {
     _prefs ??= await SharedPreferences.getInstance();
@@ -341,7 +338,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await _prefs!.setString('scanx_settings_v1', jsonEncode(map));
   }
 
-  // Helpers for display text
+  // ---------- DISPLAY HELPERS ----------
+
   String _themeLabel(AppTheme theme) {
     switch (theme) {
       case AppTheme.light:
@@ -409,6 +407,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  // ---------- UI ----------
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -433,7 +433,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // SECTION 1: Account & User Settings
+  // ---- Section builders (same as before, just calling _saveSettings() in onChanged) ----
+
   Widget _buildAccountSection() {
     return Card(
       child: ExpansionTile(
@@ -442,30 +443,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
         childrenPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
         children: [
           const SizedBox(height: 8),
-          const Text(
-            'Profile',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
+          const Text('Profile', style: TextStyle(fontWeight: FontWeight.bold)),
           ListTile(
             leading: const Icon(Icons.edit),
             title: const Text('Edit Name'),
-            onTap: () {
-              // TODO: Implement Edit Name
-            },
+            onTap: () {},
           ),
           ListTile(
             leading: const Icon(Icons.email),
             title: const Text('Edit Email'),
-            onTap: () {
-              // TODO: Implement Edit Email
-            },
+            onTap: () {},
           ),
           ListTile(
             leading: const Icon(Icons.lock),
             title: const Text('Change Password'),
-            onTap: () {
-              // TODO: Implement Change Password
-            },
+            onTap: () {},
           ),
           SwitchListTile(
             title: const Text('Two-Factor Authentication'),
@@ -482,15 +474,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               'Delete Account',
               style: TextStyle(color: Colors.red),
             ),
-            onTap: () {
-              // TODO: Implement Delete Account confirmation
-            },
+            onTap: () {},
           ),
           const Divider(),
-          const Text(
-            'App Theme',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
+          const Text('App Theme', style: TextStyle(fontWeight: FontWeight.bold)),
           ListTile(
             leading: const Icon(Icons.color_lens),
             title: const Text('Theme'),
@@ -504,18 +491,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
               items: AppTheme.values
                   .map(
                     (t) => DropdownMenuItem(
-                  value: t,
-                  child: Text(_themeLabel(t)),
-                ),
-              )
+                      value: t,
+                      child: Text(_themeLabel(t)),
+                    ),
+                  )
                   .toList(),
             ),
           ),
           const Divider(),
-          const Text(
-            'Language',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
+          const Text('Language', style: TextStyle(fontWeight: FontWeight.bold)),
           ListTile(
             leading: const Icon(Icons.language),
             title: const Text('App Language'),
@@ -529,10 +513,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               items: AppLanguage.values
                   .map(
                     (l) => DropdownMenuItem(
-                  value: l,
-                  child: Text(_languageLabel(l)),
-                ),
-              )
+                      value: l,
+                      child: Text(_languageLabel(l)),
+                    ),
+                  )
                   .toList(),
             ),
           ),
@@ -541,7 +525,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // SECTION 2: Network Scan Settings
   Widget _buildNetworkScanSection() {
     return Card(
       child: ExpansionTile(
@@ -550,10 +533,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         childrenPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
         children: [
           const SizedBox(height: 8),
-          const Text(
-            'Scan Preferences',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
+          const Text('Scan Preferences',
+              style: TextStyle(fontWeight: FontWeight.bold)),
           SwitchListTile(
             title: const Text('Auto-detect local network'),
             value: _autoDetectLocalNetwork,
@@ -603,10 +584,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
           ),
           const Divider(),
-          const Text(
-            'Smart Scan Filters',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
+          const Text('Smart Scan Filters',
+              style: TextStyle(fontWeight: FontWeight.bold)),
           SwitchListTile(
             title: const Text('Show only vulnerable devices'),
             value: _filterOnlyVulnerable,
@@ -640,10 +619,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
           ),
           const Divider(),
-          const Text(
-            'Scan Frequency',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
+          const Text('Scan Frequency',
+              style: TextStyle(fontWeight: FontWeight.bold)),
           ListTile(
             leading: const Icon(Icons.schedule),
             title: const Text('Auto-scan frequency'),
@@ -658,10 +635,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               items: ScanFrequency.values
                   .map(
                     (f) => DropdownMenuItem(
-                  value: f,
-                  child: Text(_scanFrequencyLabel(f)),
-                ),
-              )
+                      value: f,
+                      child: Text(_scanFrequencyLabel(f)),
+                    ),
+                  )
                   .toList(),
             ),
           ),
@@ -670,7 +647,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // SECTION 3: Security & Protection Settings
   Widget _buildSecuritySection() {
     return Card(
       child: ExpansionTile(
@@ -679,10 +655,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         childrenPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
         children: [
           const SizedBox(height: 8),
-          const Text(
-            'Intrusion Detection',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
+          const Text('Intrusion Detection',
+              style: TextStyle(fontWeight: FontWeight.bold)),
           SwitchListTile(
             title: const Text('Alert on new device'),
             value: _alertNewDevice,
@@ -716,10 +690,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
           ),
           const Divider(),
-          const Text(
-            'Router Security Checks',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
+          const Text('Router Security Checks',
+              style: TextStyle(fontWeight: FontWeight.bold)),
           SwitchListTile(
             title: const Text('Weak password detection'),
             value: _routerWeakPassword,
@@ -769,10 +741,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
           ),
           const Divider(),
-          const Text(
-            'IoT Security',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
+          const Text('IoT Security',
+              style: TextStyle(fontWeight: FontWeight.bold)),
           SwitchListTile(
             title: const Text('Outdated IoT firmware alerts'),
             value: _iotOutdatedFirmware,
@@ -806,10 +776,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
           ),
           const Divider(),
-          const Text(
-            'Advanced Security (Pro)',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
+          const Text('Advanced Security (Pro)',
+              style: TextStyle(fontWeight: FontWeight.bold)),
           SwitchListTile(
             title: const Text('Packet Sniffer Lite'),
             value: _packetSnifferLite,
@@ -847,7 +815,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // SECTION 4: Notifications & Alerts
   Widget _buildNotificationsSection() {
     return Card(
       child: ExpansionTile(
@@ -856,10 +823,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         childrenPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
         children: [
           const SizedBox(height: 8),
-          const Text(
-            'Push Notifications',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
+          const Text('Push Notifications',
+              style: TextStyle(fontWeight: FontWeight.bold)),
           SwitchListTile(
             title: const Text('New device connected'),
             value: _notifyNewDevice,
@@ -917,10 +882,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
           ),
           const Divider(),
-          const Text(
-            'Sounds & Vibration',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
+          const Text('Sounds & Vibration',
+              style: TextStyle(fontWeight: FontWeight.bold)),
           SwitchListTile(
             title: const Text('Alert sounds'),
             value: _alertSoundEnabled,
@@ -946,10 +909,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
           ),
           const Divider(),
-          const Text(
-            'Alert Sensitivity',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
+          const Text('Alert Sensitivity',
+              style: TextStyle(fontWeight: FontWeight.bold)),
           ListTile(
             leading: const Icon(Icons.tune),
             title: const Text('Alert sensitivity'),
@@ -964,10 +925,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               items: AlertSensitivity.values
                   .map(
                     (s) => DropdownMenuItem(
-                  value: s,
-                  child: Text(_alertSensitivityLabel(s)),
-                ),
-              )
+                      value: s,
+                      child: Text(_alertSensitivityLabel(s)),
+                    ),
+                  )
                   .toList(),
             ),
           ),
@@ -976,7 +937,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // SECTION 5: Data & Logs Settings
   Widget _buildDataLogsSection() {
     return Card(
       child: ExpansionTile(
@@ -985,29 +945,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
         childrenPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
         children: [
           const SizedBox(height: 8),
-          const Text(
-            'Activity Logs',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
+          const Text('Activity Logs',
+              style: TextStyle(fontWeight: FontWeight.bold)),
           ListTile(
             leading: const Icon(Icons.history),
             title: const Text('View scan history'),
-            onTap: () {
-              // TODO: Navigate to Scan History
-            },
+            onTap: () {},
           ),
           ListTile(
             leading: const Icon(Icons.file_download),
             title: const Text('Export logs (PDF / CSV)'),
-            onTap: () {
-              // TODO: Implement log export
-            },
+            onTap: () {},
           ),
           ListTile(
             leading: const Icon(Icons.delete),
             title: const Text('Auto-delete logs after'),
             subtitle: Text(
-                _logRetentionDays == 0 ? 'Never' : '$_logRetentionDays days'),
+              _logRetentionDays == 0 ? 'Never' : '$_logRetentionDays days',
+            ),
             trailing: DropdownButton<int>(
               value: _logRetentionDays,
               onChanged: (v) {
@@ -1016,56 +971,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _saveSettings();
               },
               items: const [
-                DropdownMenuItem(
-                  value: 7,
-                  child: Text('7 days'),
-                ),
-                DropdownMenuItem(
-                  value: 30,
-                  child: Text('30 days'),
-                ),
-                DropdownMenuItem(
-                  value: 90,
-                  child: Text('90 days'),
-                ),
-                DropdownMenuItem(
-                  value: 0,
-                  child: Text('Never'),
-                ),
+                DropdownMenuItem(value: 7, child: Text('7 days')),
+                DropdownMenuItem(value: 30, child: Text('30 days')),
+                DropdownMenuItem(value: 90, child: Text('90 days')),
+                DropdownMenuItem(value: 0, child: Text('Never')),
               ],
             ),
           ),
           const Divider(),
-          const Text(
-            'Data Export',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
+          const Text('Data Export',
+              style: TextStyle(fontWeight: FontWeight.bold)),
           ListTile(
             leading: const Icon(Icons.list_alt),
             title: const Text('Export network report'),
-            onTap: () {
-              // TODO: Implement export
-            },
+            onTap: () {},
           ),
           ListTile(
             leading: const Icon(Icons.devices_other),
             title: const Text('Export IoT device list'),
-            onTap: () {
-              // TODO: Implement export
-            },
+            onTap: () {},
           ),
           ListTile(
             leading: const Icon(Icons.router),
             title: const Text('Export router health report'),
-            onTap: () {
-              // TODO: Implement export
-            },
+            onTap: () {},
           ),
           const Divider(),
-          const Text(
-            'Privacy Control',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
+          const Text('Privacy Control',
+              style: TextStyle(fontWeight: FontWeight.bold)),
           SwitchListTile(
             title: const Text('Anonymous usage analytics'),
             value: _anonymousUsageAnalytics,
@@ -1077,23 +1010,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ListTile(
             leading: const Icon(Icons.cleaning_services),
             title: const Text('Clear local cache'),
-            onTap: () {
-              // TODO: Implement clear cache
-            },
+            onTap: () {},
           ),
           ListTile(
             leading: const Icon(Icons.delete_sweep),
             title: const Text('Delete all logs'),
-            onTap: () {
-              // TODO: Confirm & delete logs
-            },
+            onTap: () {},
           ),
         ],
       ),
     );
   }
 
-  // SECTION 6: App Preferences
   Widget _buildAppPreferencesSection() {
     return Card(
       child: ExpansionTile(
@@ -1102,10 +1030,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         childrenPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
         children: [
           const SizedBox(height: 8),
-          const Text(
-            'Performance Mode',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
+          const Text('Performance Mode',
+              style: TextStyle(fontWeight: FontWeight.bold)),
           ListTile(
             leading: const Icon(Icons.speed),
             title: const Text('Performance mode'),
@@ -1120,18 +1046,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
               items: PerformanceMode.values
                   .map(
                     (m) => DropdownMenuItem(
-                  value: m,
-                  child: Text(_performanceModeLabel(m)),
-                ),
-              )
+                      value: m,
+                      child: Text(_performanceModeLabel(m)),
+                    ),
+                  )
                   .toList(),
             ),
           ),
           const Divider(),
-          const Text(
-            'App Behaviour',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
+          const Text('App Behaviour',
+              style: TextStyle(fontWeight: FontWeight.bold)),
           SwitchListTile(
             title: const Text('Auto-start on device boot'),
             value: _autoStartOnBoot,
@@ -1157,10 +1081,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
           ),
           const Divider(),
-          const Text(
-            'Update Settings',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
+          const Text('Update Settings',
+              style: TextStyle(fontWeight: FontWeight.bold)),
           SwitchListTile(
             title: const Text('Auto-update app'),
             value: _autoUpdateApp,
@@ -1190,7 +1112,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // SECTION 7: Tools & Utilities
   Widget _buildToolsSection() {
     return Card(
       child: ExpansionTile(
@@ -1199,111 +1120,80 @@ class _SettingsScreenState extends State<SettingsScreen> {
         childrenPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
         children: [
           const SizedBox(height: 8),
-          const Text(
-            'Network Tools',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
+          const Text('Network Tools',
+              style: TextStyle(fontWeight: FontWeight.bold)),
           ListTile(
             leading: const Icon(Icons.network_ping),
             title: const Text('Ping tool'),
-            onTap: () {
-              // TODO: Navigate to Ping Tool
-            },
+            onTap: () {},
           ),
           ListTile(
             leading: const Icon(Icons.dns),
             title: const Text('Port scanner'),
-            onTap: () {
-              // TODO: Navigate to Port Scanner
-            },
+            onTap: () {},
           ),
           ListTile(
             leading: const Icon(Icons.language),
             title: const Text('DNS lookup'),
-            onTap: () {
-              // TODO: Navigate to DNS Lookup
-            },
+            onTap: () {},
           ),
           ListTile(
             leading: const Icon(Icons.info_outline),
             title: const Text('WHOIS lookup'),
-            onTap: () {
-              // TODO: Navigate to WHOIS
-            },
+            onTap: () {},
           ),
           ListTile(
             leading: const Icon(Icons.alt_route),
             title: const Text('Trace route'),
-            onTap: () {
-              // TODO: Navigate to Traceroute
-            },
+            onTap: () {},
           ),
           const Divider(),
-          const Text(
-            'WiFi Tools',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
+          const Text('WiFi Tools',
+              style: TextStyle(fontWeight: FontWeight.bold)),
           ListTile(
             leading: const Icon(Icons.wifi_tethering),
             title: const Text('Signal strength meter'),
-            onTap: () {
-              // TODO: Navigate to signal strength
-            },
+            onTap: () {},
           ),
           ListTile(
             leading: const Icon(Icons.wifi_channel),
             title: const Text('Channel overlap analyzer'),
-            onTap: () {
-              // TODO: Navigate to channel analyzer
-            },
+            onTap: () {},
           ),
           ListTile(
             leading: const Icon(Icons.speed),
             title: const Text('Bandwidth monitor'),
-            onTap: () {
-              // TODO: Navigate to bandwidth monitor
-            },
+            onTap: () {},
           ),
           ListTile(
             leading: const Icon(Icons.graphic_eq),
             title: const Text('Interference detector'),
-            onTap: () {
-              // TODO: Navigate to interference detector
-            },
+            onTap: () {},
           ),
           const Divider(),
-          const Text(
-            'Device Finder',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
+          const Text('Device Finder',
+              style: TextStyle(fontWeight: FontWeight.bold)),
           ListTile(
             leading: const Icon(Icons.location_searching),
             title: const Text('Locate device via signal strength'),
-            onTap: () {
-              // TODO: Navigate to device finder
-            },
+            onTap: () {},
           ),
           ListTile(
             leading: const Icon(Icons.track_changes),
             title: const Text('Real-time tracking mode'),
-            onTap: () {
-              // TODO: Navigate to tracking mode
-            },
+            onTap: () {},
           ),
           const Divider(),
           ListTile(
             leading: const Icon(Icons.router),
             title: const Text('Router login shortcut'),
-            onTap: () {
-              // TODO: Implement router login shortcut
-            },
+            onTap: () {},
           ),
         ],
       ),
     );
   }
 
-  // SECTION 8: Experimental & AI Features
   Widget _buildExperimentalSection() {
     return Card(
       child: ExpansionTile(
@@ -1312,10 +1202,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         childrenPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
         children: [
           const SizedBox(height: 8),
-          const Text(
-            'SCAN-X AI Assistant',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
+          const Text('SCAN-X AI Assistant',
+              style: TextStyle(fontWeight: FontWeight.bold)),
           SwitchListTile(
             title: const Text('Enable SCAN-X AI Assistant'),
             value: _aiAssistantEnabled,
@@ -1349,10 +1237,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
           ),
           const Divider(),
-          const Text(
-            'AI Router Hardening',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
+          const Text('AI Router Hardening',
+              style: TextStyle(fontWeight: FontWeight.bold)),
           SwitchListTile(
             title: const Text('Auto-generate best router settings'),
             value: _aiRouterHardening,
@@ -1378,10 +1264,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
           ),
           const Divider(),
-          const Text(
-            'Beta Features',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
+          const Text('Beta Features',
+              style: TextStyle(fontWeight: FontWeight.bold)),
           SwitchListTile(
             title: const Text('Behaviour-based threat detection'),
             value: _betaBehaviourThreatDetection,
@@ -1411,7 +1295,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // SECTION 9: Support & Legal
   Widget _buildSupportLegalSection() {
     return Card(
       child: ExpansionTile(
@@ -1420,63 +1303,45 @@ class _SettingsScreenState extends State<SettingsScreen> {
         childrenPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
         children: [
           const SizedBox(height: 8),
-          const Text(
-            'Support',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
+          const Text('Support',
+              style: TextStyle(fontWeight: FontWeight.bold)),
           ListTile(
             leading: const Icon(Icons.question_answer),
             title: const Text('FAQs'),
-            onTap: () {
-              // TODO: Navigate to FAQs
-            },
+            onTap: () {},
           ),
           ListTile(
             leading: const Icon(Icons.build_circle),
             title: const Text('Troubleshooting guides'),
-            onTap: () {
-              // TODO: Navigate to troubleshooting
-            },
+            onTap: () {},
           ),
           ListTile(
             leading: const Icon(Icons.bug_report),
             title: const Text('Report a bug'),
-            onTap: () {
-              // TODO: Implement bug report
-            },
+            onTap: () {},
           ),
           ListTile(
             leading: const Icon(Icons.support_agent),
             title: const Text('Contact support'),
-            onTap: () {
-              // TODO: Implement contact support
-            },
+            onTap: () {},
           ),
           const Divider(),
-          const Text(
-            'Legal',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
+          const Text('Legal',
+              style: TextStyle(fontWeight: FontWeight.bold)),
           ListTile(
             leading: const Icon(Icons.article),
             title: const Text('Terms & Conditions'),
-            onTap: () {
-              // TODO: Navigate to Terms
-            },
+            onTap: () {},
           ),
           ListTile(
             leading: const Icon(Icons.privacy_tip),
             title: const Text('Privacy Policy'),
-            onTap: () {
-              // TODO: Navigate to Privacy Policy
-            },
+            onTap: () {},
           ),
           ListTile(
             leading: const Icon(Icons.code),
             title: const Text('Open source licenses'),
-            onTap: () {
-              // TODO: Navigate to OSS licenses
-            },
+            onTap: () {},
           ),
         ],
       ),

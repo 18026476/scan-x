@@ -1,4 +1,6 @@
-﻿import 'package:flutter/material.dart';
+﻿// lib/features/dashboard/dashboard_screen.dart
+
+import 'package:flutter/material.dart';
 import '../../core/services/scan_service.dart';
 import '../../core/services/settings_service.dart';
 
@@ -60,31 +62,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     setState(() {});
   }
 
-  /// Simple heuristic to guess which host is the router / gateway.
-  DetectedHost? _findLikelyRouter(List<DetectedHost> hosts) {
-    if (hosts.isEmpty) return null;
-
-    // 1) Any hostname that clearly looks like a router
-    final routerNamePatterns = ['router', 'gateway', 'modem', 'homehub'];
-    for (final h in hosts) {
-      final name = h.hostname?.toLowerCase() ?? '';
-      if (routerNamePatterns.any((p) => name.contains(p))) {
-        return h;
-      }
-    }
-
-    // 2) Default gateway style IP (x.x.x.1 or x.x.x.254)
-    for (final h in hosts) {
-      final ip = h.ip;
-      if (ip.endsWith('.1') || ip.endsWith('.254')) {
-        return h;
-      }
-    }
-
-    // 3) Fallback: just the first host
-    return hosts.first;
-  }
-
   @override
   Widget build(BuildContext context) {
     final result = _scanService.lastResult;
@@ -125,7 +102,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       });
 
     final lastScanTime = result?.finishedAt;
-    final routerHost = hasData ? _findLikelyRouter(hosts) : null;
 
     return Scaffold(
       appBar: AppBar(
@@ -155,27 +131,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ],
               hasData
                   ? Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _RiskSummaryRow(
-                          highRisk: highRiskCount,
-                          mediumRisk: mediumRiskCount,
-                          lowRisk: lowRiskCount,
-                        ),
-                        const SizedBox(height: 16),
-                        _LastScanInfo(lastScanTime: lastScanTime),
-                        const SizedBox(height: 16),
-                        if (routerHost != null) ...[
-                          _RouterFirmwareCard(routerHost: routerHost),
-                          const SizedBox(height: 16),
-                        ],
-                        _TopRiskyDevicesSection(
-                          hosts: sortedHosts.take(5).toList(),
-                        ),
-                        const SizedBox(height: 24),
-                        const _HintCard(),
-                      ],
-                    )
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _RiskSummaryRow(
+                    highRisk: highRiskCount,
+                    mediumRisk: mediumRiskCount,
+                    lowRisk: lowRiskCount,
+                  ),
+                  const SizedBox(height: 16),
+                  _LastScanInfo(lastScanTime: lastScanTime),
+                  const SizedBox(height: 16),
+                  _TopRiskyDevicesSection(
+                    hosts: sortedHosts.take(5).toList(),
+                  ),
+                  const SizedBox(height: 24),
+                  const _HintCard(),
+                ],
+              )
                   : const _EmptyState(),
             ],
           ),
@@ -185,7 +157,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 }
 
-/// HEADER CARD: overall security score + quick scan button
+/// HEADER CARD: meter + quick scan button
 class _HeaderCard extends StatelessWidget {
   final int score;
   final bool isScanning;
@@ -314,7 +286,7 @@ class _HeaderCard extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   'Devices: $totalHosts\n'
-                  'High: $highRisk   Medium: $mediumRisk   Low: $lowRisk',
+                      'High: $highRisk   Medium: $mediumRisk   Low: $lowRisk',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: Colors.white70,
                   ),
@@ -335,10 +307,10 @@ class _HeaderCard extends StatelessWidget {
                   onPressed: isScanning ? null : onQuickScan,
                   icon: isScanning
                       ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
                       : const Icon(Icons.bolt),
                   label: Text(
                     isScanning ? 'Scanning…' : 'Quick Scan',
@@ -381,9 +353,9 @@ class _RiskSummaryRow extends StatelessWidget {
                 Text(
                   '$count',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: color,
-                      ),
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -430,98 +402,6 @@ class _LastScanInfo extends StatelessWidget {
               ? lastScanTime.toString()
               : 'No scan has been run yet',
         ),
-      ),
-    );
-  }
-}
-
-/// Milestone 2: router / firmware advice card
-class _RouterFirmwareCard extends StatelessWidget {
-  final DetectedHost routerHost;
-
-  const _RouterFirmwareCard({required this.routerHost});
-
-  bool _hasMgmtPorts(List<OpenPort> ports) {
-    const mgmtPorts = [80, 443, 8080, 8443];
-    return ports.any((p) => mgmtPorts.contains(p.port));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final hasMgmt = _hasMgmtPorts(routerHost.openPorts);
-
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.router, color: Colors.amber),
-                const SizedBox(width: 8),
-                Text(
-                  'Router firmware check',
-                  style: theme.textTheme.titleMedium,
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '${routerHost.hostname ?? 'Likely router'} • ${routerHost.ip}',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: Colors.grey[600],
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Keeping your router firmware up to date fixes critical security bugs. '
-              'SCAN-X can see that this device looks like your router, but it cannot '
-              'see the exact firmware version.',
-              style: theme.textTheme.bodySmall,
-            ),
-            const SizedBox(height: 8),
-            if (hasMgmt)
-              Text(
-                'Tip: The router management page appears to be exposed on the local network '
-                '(web admin port detected). Make sure remote/WAN access is disabled unless '
-                'you really need it.',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: Colors.orange[700],
-                ),
-              ),
-            const SizedBox(height: 8),
-            Text(
-              'Recommended every 6–12 months:',
-              style: theme.textTheme.bodySmall?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 4),
-            _bullet('Log in to your router admin page (usually 192.168.x.1).'),
-            _bullet('Check for “Firmware update” or “Software update”.'),
-            _bullet('Apply updates from the vendor only, then reboot.'),
-            _bullet('Disable remote/WAN admin if you don’t use it.'),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _bullet(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 2),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('• '),
-          Expanded(child: Text(text)),
-        ],
       ),
     );
   }
@@ -605,7 +485,7 @@ class _TopRiskyDevicesSection extends StatelessWidget {
                 ),
                 trailing: Container(
                   padding:
-                      const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                  const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
                   decoration: BoxDecoration(
                     color: riskColor.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(12),
@@ -642,7 +522,7 @@ class _HintCard extends StatelessWidget {
         padding: EdgeInsets.all(12),
         child: Text(
           'Tip: Use Quick Scan for a fast overview of your network. '
-          'For deeper analysis, run a full scan from the Scan tab.',
+              'For deeper analysis, run a full scan from the Scan tab.',
         ),
       ),
     );

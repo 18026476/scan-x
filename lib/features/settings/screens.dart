@@ -1,9 +1,11 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// SCAN-X Settings Screen (Final Version)
-/// Now with persistent storage using SharedPreferences.
+/// SCAN-X Settings Screen with persistence
+/// - Saves all settings into SharedPreferences
+/// - Loads them on startup
+/// - Adds "Hosts per scan" (network ID auto from scanner)
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);
 
@@ -48,6 +50,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _filterRouterIoTOnly = false;
 
   ScanFrequency _scanFrequency = ScanFrequency.manual;
+
+  // NEW: Hosts per scan (0 = all hosts, subnet chosen automatically by scanner)
+  int _hostsPerScan = 256;
 
   // 3. Security & Protection Settings
   bool _alertNewDevice = true;
@@ -101,9 +106,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _notifyBeforeUpdate = true;
   bool _betaUpdates = false;
 
-  // 7. Tools & Utilities (purely navigational hooks)
-  // nothing to store yet; they’ll be ListTiles with onTap
-
   // 8. Experimental & AI Features
   bool _aiAssistantEnabled = true;
   bool _aiExplainVuln = true;
@@ -124,224 +126,247 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _initAndLoadSettings();
   }
 
+  // ---------- PERSISTENCE LAYER ----------
+
   Future<void> _initAndLoadSettings() async {
-    _prefs ??= await SharedPreferences.getInstance();
-    final jsonStr = _prefs!.getString('scanx_settings_v1');
-    if (jsonStr == null) return;
+    try {
+      _prefs ??= await SharedPreferences.getInstance();
+      final jsonStr = _prefs!.getString('scanx_settings_v1');
+      if (jsonStr == null) {
+        debugPrint('[SCANX][Settings] No saved settings found, using defaults.');
+        return;
+      }
 
-    final Map<String, dynamic> map = jsonDecode(jsonStr);
+      final Map<String, dynamic> map = jsonDecode(jsonStr);
+      debugPrint('[SCANX][Settings] Loaded settings: $map');
 
-    int _enumIndex(dynamic v, int max, int fallback) {
-      final n = (v is num) ? v.toInt() : fallback;
-      if (n < 0 || n >= max) return fallback;
-      return n;
+      int _enumIndex(dynamic v, int max, int fallback) {
+        final n = (v is num) ? v.toInt() : fallback;
+        if (n < 0 || n >= max) return fallback;
+        return n;
+      }
+
+      setState(() {
+        _twoFactorEnabled = map['twoFactorEnabled'] ?? _twoFactorEnabled;
+
+        _appTheme = AppTheme.values[_enumIndex(
+          map['appTheme'],
+          AppTheme.values.length,
+          _appTheme.index,
+        )];
+        _appLanguage = AppLanguage.values[_enumIndex(
+          map['appLanguage'],
+          AppLanguage.values.length,
+          _appLanguage.index,
+        )];
+
+        _autoDetectLocalNetwork =
+            map['autoDetectLocalNetwork'] ?? _autoDetectLocalNetwork;
+        _manualIpRange = map['manualIpRange'] ?? _manualIpRange;
+        _quickScan = map['quickScan'] ?? _quickScan;
+        _deepScan = map['deepScan'] ?? _deepScan;
+        _stealthScan = map['stealthScan'] ?? _stealthScan;
+        _continuousMonitoring =
+            map['continuousMonitoring'] ?? _continuousMonitoring;
+
+        _filterOnlyVulnerable =
+            map['filterOnlyVulnerable'] ?? _filterOnlyVulnerable;
+        _filterOnlyNewDevices =
+            map['filterOnlyNewDevices'] ?? _filterOnlyNewDevices;
+        _excludeTrustedDevices =
+            map['excludeTrustedDevices'] ?? _excludeTrustedDevices;
+        _filterRouterIoTOnly =
+            map['filterRouterIoTOnly'] ?? _filterRouterIoTOnly;
+
+        _scanFrequency = ScanFrequency.values[_enumIndex(
+          map['scanFrequency'],
+          ScanFrequency.values.length,
+          _scanFrequency.index,
+        )];
+
+        _hostsPerScan =
+            (map['hostsPerScan'] as num?)?.toInt() ?? _hostsPerScan;
+
+        _alertNewDevice = map['alertNewDevice'] ?? _alertNewDevice;
+        _alertMacChange = map['alertMacChange'] ?? _alertMacChange;
+        _alertArpSpoof = map['alertArpSpoof'] ?? _alertArpSpoof;
+        _alertPortScanAttempts =
+            map['alertPortScanAttempts'] ?? _alertPortScanAttempts;
+
+        _routerWeakPassword =
+            map['routerWeakPassword'] ?? _routerWeakPassword;
+        _routerOpenPorts = map['routerOpenPorts'] ?? _routerOpenPorts;
+        _routerOutdatedFirmware =
+            map['routerOutdatedFirmware'] ?? _routerOutdatedFirmware;
+        _routerUpnpCheck = map['routerUpnpCheck'] ?? _routerUpnpCheck;
+        _routerWpsCheck = map['routerWpsCheck'] ?? _routerWpsCheck;
+        _routerDnsHijack = map['routerDnsHijack'] ?? _routerDnsHijack;
+
+        _iotOutdatedFirmware =
+            map['iotOutdatedFirmware'] ?? _iotOutdatedFirmware;
+        _iotDefaultPasswords =
+            map['iotDefaultPasswords'] ?? _iotDefaultPasswords;
+        _iotVulnDbMatch = map['iotVulnDbMatch'] ?? _iotVulnDbMatch;
+        _iotAutoRecommendations =
+            map['iotAutoRecommendations'] ?? _iotAutoRecommendations;
+
+        _packetSnifferLite =
+            map['packetSnifferLite'] ?? _packetSnifferLite;
+        _wifiDeauthDetection =
+            map['wifiDeauthDetection'] ?? _wifiDeauthDetection;
+        _rogueApDetection = map['rogueApDetection'] ?? _rogueApDetection;
+        _hiddenSsidDetection =
+            map['hiddenSsidDetection'] ?? _hiddenSsidDetection;
+
+        _notifyNewDevice = map['notifyNewDevice'] ?? _notifyNewDevice;
+        _notifyUnknownDevice =
+            map['notifyUnknownDevice'] ?? _notifyUnknownDevice;
+        _notifyRouterVuln = map['notifyRouterVuln'] ?? _notifyRouterVuln;
+        _notifyIotWarning = map['notifyIotWarning'] ?? _notifyIotWarning;
+        _notifyHighRisk = map['notifyHighRisk'] ?? _notifyHighRisk;
+        _notifyScanCompleted =
+            map['notifyScanCompleted'] ?? _notifyScanCompleted;
+        _notifyAutoScanResults =
+            map['notifyAutoScanResults'] ?? _notifyAutoScanResults;
+
+        _alertSoundEnabled =
+            map['alertSoundEnabled'] ?? _alertSoundEnabled;
+        _alertVibrationEnabled =
+            map['alertVibrationEnabled'] ?? _alertVibrationEnabled;
+        _alertSilentMode = map['alertSilentMode'] ?? _alertSilentMode;
+
+        _alertSensitivity = AlertSensitivity.values[_enumIndex(
+          map['alertSensitivity'],
+          AlertSensitivity.values.length,
+          _alertSensitivity.index,
+        )];
+
+        _logRetentionDays =
+            (map['logRetentionDays'] as num?)?.toInt() ?? _logRetentionDays;
+        _anonymousUsageAnalytics =
+            map['anonymousUsageAnalytics'] ?? _anonymousUsageAnalytics;
+
+        _performanceMode = PerformanceMode.values[_enumIndex(
+          map['performanceMode'],
+          PerformanceMode.values.length,
+          _performanceMode.index,
+        )];
+        _autoStartOnBoot = map['autoStartOnBoot'] ?? _autoStartOnBoot;
+        _autoScanOnLaunch = map['autoScanOnLaunch'] ?? _autoScanOnLaunch;
+        _keepScreenAwake = map['keepScreenAwake'] ?? _keepScreenAwake;
+
+        _autoUpdateApp = map['autoUpdateApp'] ?? _autoUpdateApp;
+        _notifyBeforeUpdate =
+            map['notifyBeforeUpdate'] ?? _notifyBeforeUpdate;
+        _betaUpdates = map['betaUpdates'] ?? _betaUpdates;
+
+        _aiAssistantEnabled =
+            map['aiAssistantEnabled'] ?? _aiAssistantEnabled;
+        _aiExplainVuln = map['aiExplainVuln'] ?? _aiExplainVuln;
+        _aiOneClickFix = map['aiOneClickFix'] ?? _aiOneClickFix;
+        _aiRiskScoring = map['aiRiskScoring'] ?? _aiRiskScoring;
+
+        _aiRouterHardening =
+            map['aiRouterHardening'] ?? _aiRouterHardening;
+        _aiDetectUnnecessaryServices =
+            map['aiDetectUnnecessaryServices'] ?? _aiDetectUnnecessaryServices;
+        _aiProactiveWarnings =
+            map['aiProactiveWarnings'] ?? _aiProactiveWarnings;
+
+        _betaBehaviourThreatDetection =
+            map['betaBehaviourThreatDetection'] ??
+                _betaBehaviourThreatDetection;
+        _betaLocalMlProfiling =
+            map['betaLocalMlProfiling'] ?? _betaLocalMlProfiling;
+        _betaIotFingerprinting =
+            map['betaIotFingerprinting'] ?? _betaIotFingerprinting;
+      });
+    } catch (e, st) {
+      debugPrint('[SCANX][Settings] Error loading settings: $e');
+      debugPrint(st.toString());
     }
-
-    setState(() {
-      _twoFactorEnabled = map['twoFactorEnabled'] ?? _twoFactorEnabled;
-
-      _appTheme = AppTheme.values[_enumIndex(
-        map['appTheme'],
-        AppTheme.values.length,
-        _appTheme.index,
-      )];
-      _appLanguage = AppLanguage.values[_enumIndex(
-        map['appLanguage'],
-        AppLanguage.values.length,
-        _appLanguage.index,
-      )];
-
-      _autoDetectLocalNetwork =
-          map['autoDetectLocalNetwork'] ?? _autoDetectLocalNetwork;
-      _manualIpRange = map['manualIpRange'] ?? _manualIpRange;
-      _quickScan = map['quickScan'] ?? _quickScan;
-      _deepScan = map['deepScan'] ?? _deepScan;
-      _stealthScan = map['stealthScan'] ?? _stealthScan;
-      _continuousMonitoring =
-          map['continuousMonitoring'] ?? _continuousMonitoring;
-
-      _filterOnlyVulnerable =
-          map['filterOnlyVulnerable'] ?? _filterOnlyVulnerable;
-      _filterOnlyNewDevices =
-          map['filterOnlyNewDevices'] ?? _filterOnlyNewDevices;
-      _excludeTrustedDevices =
-          map['excludeTrustedDevices'] ?? _excludeTrustedDevices;
-      _filterRouterIoTOnly =
-          map['filterRouterIoTOnly'] ?? _filterRouterIoTOnly;
-
-      _scanFrequency = ScanFrequency.values[_enumIndex(
-        map['scanFrequency'],
-        ScanFrequency.values.length,
-        _scanFrequency.index,
-      )];
-
-      _alertNewDevice = map['alertNewDevice'] ?? _alertNewDevice;
-      _alertMacChange = map['alertMacChange'] ?? _alertMacChange;
-      _alertArpSpoof = map['alertArpSpoof'] ?? _alertArpSpoof;
-      _alertPortScanAttempts =
-          map['alertPortScanAttempts'] ?? _alertPortScanAttempts;
-
-      _routerWeakPassword =
-          map['routerWeakPassword'] ?? _routerWeakPassword;
-      _routerOpenPorts = map['routerOpenPorts'] ?? _routerOpenPorts;
-      _routerOutdatedFirmware =
-          map['routerOutdatedFirmware'] ?? _routerOutdatedFirmware;
-      _routerUpnpCheck = map['routerUpnpCheck'] ?? _routerUpnpCheck;
-      _routerWpsCheck = map['routerWpsCheck'] ?? _routerWpsCheck;
-      _routerDnsHijack = map['routerDnsHijack'] ?? _routerDnsHijack;
-
-      _iotOutdatedFirmware =
-          map['iotOutdatedFirmware'] ?? _iotOutdatedFirmware;
-      _iotDefaultPasswords =
-          map['iotDefaultPasswords'] ?? _iotDefaultPasswords;
-      _iotVulnDbMatch = map['iotVulnDbMatch'] ?? _iotVulnDbMatch;
-      _iotAutoRecommendations =
-          map['iotAutoRecommendations'] ?? _iotAutoRecommendations;
-
-      _packetSnifferLite = map['packetSnifferLite'] ?? _packetSnifferLite;
-      _wifiDeauthDetection =
-          map['wifiDeauthDetection'] ?? _wifiDeauthDetection;
-      _rogueApDetection = map['rogueApDetection'] ?? _rogueApDetection;
-      _hiddenSsidDetection =
-          map['hiddenSsidDetection'] ?? _hiddenSsidDetection;
-
-      _notifyNewDevice = map['notifyNewDevice'] ?? _notifyNewDevice;
-      _notifyUnknownDevice =
-          map['notifyUnknownDevice'] ?? _notifyUnknownDevice;
-      _notifyRouterVuln = map['notifyRouterVuln'] ?? _notifyRouterVuln;
-      _notifyIotWarning = map['notifyIotWarning'] ?? _notifyIotWarning;
-      _notifyHighRisk = map['notifyHighRisk'] ?? _notifyHighRisk;
-      _notifyScanCompleted =
-          map['notifyScanCompleted'] ?? _notifyScanCompleted;
-      _notifyAutoScanResults =
-          map['notifyAutoScanResults'] ?? _notifyAutoScanResults;
-
-      _alertSoundEnabled =
-          map['alertSoundEnabled'] ?? _alertSoundEnabled;
-      _alertVibrationEnabled =
-          map['alertVibrationEnabled'] ?? _alertVibrationEnabled;
-      _alertSilentMode = map['alertSilentMode'] ?? _alertSilentMode;
-
-      _alertSensitivity = AlertSensitivity.values[_enumIndex(
-        map['alertSensitivity'],
-        AlertSensitivity.values.length,
-        _alertSensitivity.index,
-      )];
-
-      _logRetentionDays =
-          (map['logRetentionDays'] as num?)?.toInt() ?? _logRetentionDays;
-      _anonymousUsageAnalytics =
-          map['anonymousUsageAnalytics'] ?? _anonymousUsageAnalytics;
-
-      _performanceMode = PerformanceMode.values[_enumIndex(
-        map['performanceMode'],
-        PerformanceMode.values.length,
-        _performanceMode.index,
-      )];
-      _autoStartOnBoot = map['autoStartOnBoot'] ?? _autoStartOnBoot;
-      _autoScanOnLaunch = map['autoScanOnLaunch'] ?? _autoScanOnLaunch;
-      _keepScreenAwake = map['keepScreenAwake'] ?? _keepScreenAwake;
-
-      _autoUpdateApp = map['autoUpdateApp'] ?? _autoUpdateApp;
-      _notifyBeforeUpdate =
-          map['notifyBeforeUpdate'] ?? _notifyBeforeUpdate;
-      _betaUpdates = map['betaUpdates'] ?? _betaUpdates;
-
-      _aiAssistantEnabled =
-          map['aiAssistantEnabled'] ?? _aiAssistantEnabled;
-      _aiExplainVuln = map['aiExplainVuln'] ?? _aiExplainVuln;
-      _aiOneClickFix = map['aiOneClickFix'] ?? _aiOneClickFix;
-      _aiRiskScoring = map['aiRiskScoring'] ?? _aiRiskScoring;
-
-      _aiRouterHardening =
-          map['aiRouterHardening'] ?? _aiRouterHardening;
-      _aiDetectUnnecessaryServices =
-          map['aiDetectUnnecessaryServices'] ?? _aiDetectUnnecessaryServices;
-      _aiProactiveWarnings =
-          map['aiProactiveWarnings'] ?? _aiProactiveWarnings;
-
-      _betaBehaviourThreatDetection =
-          map['betaBehaviourThreatDetection'] ??
-              _betaBehaviourThreatDetection;
-      _betaLocalMlProfiling =
-          map['betaLocalMlProfiling'] ?? _betaLocalMlProfiling;
-      _betaIotFingerprinting =
-          map['betaIotFingerprinting'] ?? _betaIotFingerprinting;
-    });
   }
 
   Future<void> _saveSettings() async {
-    _prefs ??= await SharedPreferences.getInstance();
+    try {
+      _prefs ??= await SharedPreferences.getInstance();
 
-    final map = <String, dynamic>{
-      'twoFactorEnabled': _twoFactorEnabled,
-      'appTheme': _appTheme.index,
-      'appLanguage': _appLanguage.index,
-      'autoDetectLocalNetwork': _autoDetectLocalNetwork,
-      'manualIpRange': _manualIpRange,
-      'quickScan': _quickScan,
-      'deepScan': _deepScan,
-      'stealthScan': _stealthScan,
-      'continuousMonitoring': _continuousMonitoring,
-      'filterOnlyVulnerable': _filterOnlyVulnerable,
-      'filterOnlyNewDevices': _filterOnlyNewDevices,
-      'excludeTrustedDevices': _excludeTrustedDevices,
-      'filterRouterIoTOnly': _filterRouterIoTOnly,
-      'scanFrequency': _scanFrequency.index,
-      'alertNewDevice': _alertNewDevice,
-      'alertMacChange': _alertMacChange,
-      'alertArpSpoof': _alertArpSpoof,
-      'alertPortScanAttempts': _alertPortScanAttempts,
-      'routerWeakPassword': _routerWeakPassword,
-      'routerOpenPorts': _routerOpenPorts,
-      'routerOutdatedFirmware': _routerOutdatedFirmware,
-      'routerUpnpCheck': _routerUpnpCheck,
-      'routerWpsCheck': _routerWpsCheck,
-      'routerDnsHijack': _routerDnsHijack,
-      'iotOutdatedFirmware': _iotOutdatedFirmware,
-      'iotDefaultPasswords': _iotDefaultPasswords,
-      'iotVulnDbMatch': _iotVulnDbMatch,
-      'iotAutoRecommendations': _iotAutoRecommendations,
-      'packetSnifferLite': _packetSnifferLite,
-      'wifiDeauthDetection': _wifiDeauthDetection,
-      'rogueApDetection': _rogueApDetection,
-      'hiddenSsidDetection': _hiddenSsidDetection,
-      'notifyNewDevice': _notifyNewDevice,
-      'notifyUnknownDevice': _notifyUnknownDevice,
-      'notifyRouterVuln': _notifyRouterVuln,
-      'notifyIotWarning': _notifyIotWarning,
-      'notifyHighRisk': _notifyHighRisk,
-      'notifyScanCompleted': _notifyScanCompleted,
-      'notifyAutoScanResults': _notifyAutoScanResults,
-      'alertSoundEnabled': _alertSoundEnabled,
-      'alertVibrationEnabled': _alertVibrationEnabled,
-      'alertSilentMode': _alertSilentMode,
-      'alertSensitivity': _alertSensitivity.index,
-      'logRetentionDays': _logRetentionDays,
-      'anonymousUsageAnalytics': _anonymousUsageAnalytics,
-      'performanceMode': _performanceMode.index,
-      'autoStartOnBoot': _autoStartOnBoot,
-      'autoScanOnLaunch': _autoScanOnLaunch,
-      'keepScreenAwake': _keepScreenAwake,
-      'autoUpdateApp': _autoUpdateApp,
-      'notifyBeforeUpdate': _notifyBeforeUpdate,
-      'betaUpdates': _betaUpdates,
-      'aiAssistantEnabled': _aiAssistantEnabled,
-      'aiExplainVuln': _aiExplainVuln,
-      'aiOneClickFix': _aiOneClickFix,
-      'aiRiskScoring': _aiRiskScoring,
-      'aiRouterHardening': _aiRouterHardening,
-      'aiDetectUnnecessaryServices': _aiDetectUnnecessaryServices,
-      'aiProactiveWarnings': _aiProactiveWarnings,
-      'betaBehaviourThreatDetection': _betaBehaviourThreatDetection,
-      'betaLocalMlProfiling': _betaLocalMlProfiling,
-      'betaIotFingerprinting': _betaIotFingerprinting,
-    };
+      final map = <String, dynamic>{
+        'twoFactorEnabled': _twoFactorEnabled,
+        'appTheme': _appTheme.index,
+        'appLanguage': _appLanguage.index,
+        'autoDetectLocalNetwork': _autoDetectLocalNetwork,
+        'manualIpRange': _manualIpRange,
+        'quickScan': _quickScan,
+        'deepScan': _deepScan,
+        'stealthScan': _stealthScan,
+        'continuousMonitoring': _continuousMonitoring,
+        'filterOnlyVulnerable': _filterOnlyVulnerable,
+        'filterOnlyNewDevices': _filterOnlyNewDevices,
+        'excludeTrustedDevices': _excludeTrustedDevices,
+        'filterRouterIoTOnly': _filterRouterIoTOnly,
+        'scanFrequency': _scanFrequency.index,
+        'hostsPerScan': _hostsPerScan,
+        'alertNewDevice': _alertNewDevice,
+        'alertMacChange': _alertMacChange,
+        'alertArpSpoof': _alertArpSpoof,
+        'alertPortScanAttempts': _alertPortScanAttempts,
+        'routerWeakPassword': _routerWeakPassword,
+        'routerOpenPorts': _routerOpenPorts,
+        'routerOutdatedFirmware': _routerOutdatedFirmware,
+        'routerUpnpCheck': _routerUpnpCheck,
+        'routerWpsCheck': _routerWpsCheck,
+        'routerDnsHijack': _routerDnsHijack,
+        'iotOutdatedFirmware': _iotOutdatedFirmware,
+        'iotDefaultPasswords': _iotDefaultPasswords,
+        'iotVulnDbMatch': _iotVulnDbMatch,
+        'iotAutoRecommendations': _iotAutoRecommendations,
+        'packetSnifferLite': _packetSnifferLite,
+        'wifiDeauthDetection': _wifiDeauthDetection,
+        'rogueApDetection': _rogueApDetection,
+        'hiddenSsidDetection': _hiddenSsidDetection,
+        'notifyNewDevice': _notifyNewDevice,
+        'notifyUnknownDevice': _notifyUnknownDevice,
+        'notifyRouterVuln': _notifyRouterVuln,
+        'notifyIotWarning': _notifyIotWarning,
+        'notifyHighRisk': _notifyHighRisk,
+        'notifyScanCompleted': _notifyScanCompleted,
+        'notifyAutoScanResults': _notifyAutoScanResults,
+        'alertSoundEnabled': _alertSoundEnabled,
+        'alertVibrationEnabled': _alertVibrationEnabled,
+        'alertSilentMode': _alertSilentMode,
+        'alertSensitivity': _alertSensitivity.index,
+        'logRetentionDays': _logRetentionDays,
+        'anonymousUsageAnalytics': _anonymousUsageAnalytics,
+        'performanceMode': _performanceMode.index,
+        'autoStartOnBoot': _autoStartOnBoot,
+        'autoScanOnLaunch': _autoScanOnLaunch,
+        'keepScreenAwake': _keepScreenAwake,
+        'autoUpdateApp': _autoUpdateApp,
+        'notifyBeforeUpdate': _notifyBeforeUpdate,
+        'betaUpdates': _betaUpdates,
+        'aiAssistantEnabled': _aiAssistantEnabled,
+        'aiExplainVuln': _aiExplainVuln,
+        'aiOneClickFix': _aiOneClickFix,
+        'aiRiskScoring': _aiRiskScoring,
+        'aiRouterHardening': _aiRouterHardening,
+        'aiDetectUnnecessaryServices': _aiDetectUnnecessaryServices,
+        'aiProactiveWarnings': _aiProactiveWarnings,
+        'betaBehaviourThreatDetection': _betaBehaviourThreatDetection,
+        'betaLocalMlProfiling': _betaLocalMlProfiling,
+        'betaIotFingerprinting': _betaIotFingerprinting,
+      };
 
-    await _prefs!.setString('scanx_settings_v1', jsonEncode(map));
+      await _prefs!.setString('scanx_settings_v1', jsonEncode(map));
+      debugPrint('[SCANX][Settings] Saved settings: $map');
+    } catch (e, st) {
+      debugPrint('[SCANX][Settings] Error saving settings: $e');
+      debugPrint(st.toString());
+    }
   }
 
-  // Helpers for display text
+  // ---------- DISPLAY HELPERS ----------
+
   String _themeLabel(AppTheme theme) {
     switch (theme) {
       case AppTheme.light:
@@ -408,6 +433,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return 'Performance';
     }
   }
+
+  String _hostsPerScanLabel(int value) {
+    if (value == 0) return 'All hosts (full subnet)';
+    return '$value hosts per scan';
+  }
+
+  // ---------- UI ----------
 
   @override
   Widget build(BuildContext context) {
@@ -602,6 +634,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _saveSettings();
             },
           ),
+
+          // NEW: Hosts per scan
+          ListTile(
+            leading: const Icon(Icons.group),
+            title: const Text('Hosts per scan'),
+            subtitle: Text(_hostsPerScanLabel(_hostsPerScan)),
+            trailing: DropdownButton<int>(
+              value: _hostsPerScan,
+              onChanged: (value) {
+                if (value == null) return;
+                setState(() => _hostsPerScan = value);
+                _saveSettings();
+              },
+              items: const [
+                DropdownMenuItem(value: 16, child: Text('16')),
+                DropdownMenuItem(value: 32, child: Text('32')),
+                DropdownMenuItem(value: 64, child: Text('64')),
+                DropdownMenuItem(value: 128, child: Text('128')),
+                DropdownMenuItem(value: 256, child: Text('256')),
+                DropdownMenuItem(value: 512, child: Text('512')),
+                DropdownMenuItem(value: 1024, child: Text('1024')),
+                DropdownMenuItem(
+                  value: 0,
+                  child: Text('All hosts'),
+                ),
+              ],
+            ),
+          ),
+
           const Divider(),
           const Text(
             'Smart Scan Filters',
@@ -1007,7 +1068,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             leading: const Icon(Icons.delete),
             title: const Text('Auto-delete logs after'),
             subtitle: Text(
-                _logRetentionDays == 0 ? 'Never' : '$_logRetentionDays days'),
+              _logRetentionDays == 0 ? 'Never' : '$_logRetentionDays days',
+            ),
             trailing: DropdownButton<int>(
               value: _logRetentionDays,
               onChanged: (v) {

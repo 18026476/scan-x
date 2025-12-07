@@ -1,6 +1,7 @@
-﻿import 'dart:async';
-import 'dart:math' as math;
+﻿// lib/features/scan/scan_screen.dart
 
+import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../core/services/scan_service.dart';
 import '../../core/services/settings_service.dart';
@@ -49,6 +50,7 @@ class _ScanScreenState extends State<ScanScreen> {
 
     _progressTimer = Timer.periodic(const Duration(milliseconds: 250), (t) {
       setState(() {
+        // creep towards ~90% max while scanning
         _gaugeValue += 0.03;
         if (_gaugeValue > 0.9) _gaugeValue = 0.9;
       });
@@ -82,7 +84,7 @@ class _ScanScreenState extends State<ScanScreen> {
         _lastResult = result;
       });
 
-      _stopProgress(0.8);
+      _stopProgress(0.8); // feels “mostly done”
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Smart scan completed for $target')),
@@ -122,7 +124,7 @@ class _ScanScreenState extends State<ScanScreen> {
         _lastResult = result;
       });
 
-      _stopProgress(1.0);
+      _stopProgress(1.0); // full send
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Full scan completed for $target')),
@@ -142,18 +144,37 @@ class _ScanScreenState extends State<ScanScreen> {
     }
   }
 
+  Color _riskColor(RiskLevel risk) {
+    switch (risk) {
+      case RiskLevel.high:
+        return Colors.redAccent;
+      case RiskLevel.medium:
+        return Colors.orangeAccent;
+      case RiskLevel.low:
+        return Colors.greenAccent;
+    }
+  }
+
+  String _riskLabel(RiskLevel risk) {
+    switch (risk) {
+      case RiskLevel.high:
+        return 'High';
+      case RiskLevel.medium:
+        return 'Medium';
+      case RiskLevel.low:
+        return 'Low';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final result = _lastResult;
     final hosts = result?.hosts ?? [];
 
-    final highRisk =
-        hosts.where((h) => h.risk == RiskLevel.high).length;
-    final mediumRisk =
-        hosts.where((h) => h.risk == RiskLevel.medium).length;
-    final lowRisk =
-        hosts.where((h) => h.risk == RiskLevel.low).length;
+    final highRisk = hosts.where((h) => h.risk == RiskLevel.high).length;
+    final mediumRisk = hosts.where((h) => h.risk == RiskLevel.medium).length;
+    final lowRisk = hosts.where((h) => h.risk == RiskLevel.low).length;
 
     return Scaffold(
       appBar: AppBar(
@@ -164,6 +185,7 @@ class _ScanScreenState extends State<ScanScreen> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
+            // ---------------- SCAN-O-METER GAUGE ------------------------
             Card(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
@@ -184,11 +206,15 @@ class _ScanScreenState extends State<ScanScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
+                    // no status text here (by your request)
                   ],
                 ),
               ),
             ),
+
             const SizedBox(height: 16),
+
+            // ---------------- TARGET + BUTTONS ---------------------------
             Card(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -214,12 +240,12 @@ class _ScanScreenState extends State<ScanScreen> {
                             onPressed: _isScanning ? null : _runSmartScan,
                             icon: _isScanning
                                 ? const SizedBox(
-                                    width: 16,
-                                    height: 16,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  )
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                              ),
+                            )
                                 : const Icon(Icons.bolt),
                             label: Text(
                               _isScanning ? 'Scanning…' : 'Smart Scan',
@@ -260,7 +286,10 @@ class _ScanScreenState extends State<ScanScreen> {
                 ),
               ),
             ),
+
             const SizedBox(height: 16),
+
+            // ---------------- SUMMARY -----------------------------------
             if (result == null)
               Expanded(
                 child: Center(
@@ -342,7 +371,10 @@ class _ScanScreenState extends State<ScanScreen> {
   }
 }
 
-// SCAN-O-METER GAUGE (top semicircle)
+// ---------------------------------------------------------------------------
+// SCAN-O-METER GAUGE (TOP SEMICIRCLE 0–100 LEFT→RIGHT)
+// ---------------------------------------------------------------------------
+
 class _ScanGauge extends StatelessWidget {
   final double value; // 0.0–1.0
   final bool isActive;
@@ -381,12 +413,16 @@ class _GaugePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    // Center slightly lower, so the arc sits above it (rainbow style).
     final center = Offset(size.width / 2, size.height * 0.65);
     final radius = math.min(size.width, size.height) * 0.45;
 
+    // TOP semicircle (arc above center, open downwards):
+    // 180° (left) -> 360°/0° (right) across the top.
     final startAngle = _degToRad(180);
-    final sweepAngle = _degToRad(180);
+    final sweepAngle = _degToRad(180); // positive sweep along the top
 
+    // --- Base & active arcs ---
     final basePaint = Paint()
       ..color = const Color(0xFF222831)
       ..style = PaintingStyle.stroke
@@ -418,6 +454,7 @@ class _GaugePainter extends CustomPainter {
       activePaint,
     );
 
+    // --- Tick marks ---
     final tickPaint = Paint()
       ..color = Colors.grey.shade600
       ..style = PaintingStyle.stroke
@@ -449,6 +486,7 @@ class _GaugePainter extends CustomPainter {
       canvas.drawLine(start, end, isMajor ? majorTickPaint : tickPaint);
     }
 
+    // --- Numeric labels: 0 (left), 50 (top middle), 100 (right) ---
     final textPainter = TextPainter(
       textAlign: TextAlign.center,
       textDirection: TextDirection.ltr,
@@ -483,6 +521,7 @@ class _GaugePainter extends CustomPainter {
     drawLabel(0.5, '50');
     drawLabel(1.0, '100');
 
+    // --- Needle ---
     final needleAngle = startAngle + sweepAngle * clampedValue;
     final needleLength = radius * 0.9;
 
@@ -507,6 +546,7 @@ class _GaugePainter extends CustomPainter {
       canvas.drawLine(center, needleEnd, glowPaint);
     }
 
+    // --- Center knob ---
     final knobPaint = Paint()
       ..color = Colors.black
       ..style = PaintingStyle.fill;
