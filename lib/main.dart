@@ -1,10 +1,16 @@
+﻿// lib/main.dart
+
 import 'package:flutter/material.dart';
+import 'package:scanx_app/core/services/settings_service.dart';
+import 'package:scanx_app/core/services/services.dart';
+import 'package:scanx_app/home_shell.dart';
 
-import 'core/services/app_theme.dart';
-import 'features/navigation/main_navigation.dart';
-
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialise global settings singleton
+  settingsService = await SettingsService.create();
+
   runApp(const ScanXApp());
 }
 
@@ -14,13 +20,13 @@ class ScanXApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'SCAN-X',
-      debugShowCheckedModeBanner: false,
-      // Always dark for now – you can change to ThemeMode.system later if you want.
-      themeMode: ThemeMode.dark,
-      theme: AppTheme.lightTheme,   // used if you ever switch to light
+      title: 'SCAN-X Cyber Labs',
+      theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      home: const MainNavigation(),
+      themeMode: settingsService.themeMode,
+      home: const HomeShell(),
+      debugShowCheckedModeBanner: false,
     );
   }
 }
+
