@@ -1,6 +1,6 @@
 ﻿import 'package:flutter/material.dart';
-import '../../core/services/scan_service.dart';
-import '../../core/services/settings_service.dart';
+import 'package:scanx_app/core/services/scan_service.dart';
+import 'package:scanx_app/core/services/settings_service.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -13,700 +13,280 @@ class _DashboardScreenState extends State<DashboardScreen> {
   final ScanService _scanService = ScanService();
   final SettingsService _settingsService = SettingsService();
 
-  bool _isScanning = false;
-  String? _errorMessage;
+  bool _isQuickScanning = false;
 
-  Future<void> _handleQuickScan() async {
-    if (_isScanning) return;
+  Future<void> _runQuickScan() async {
+    if (_isQuickScanning) return;
 
     setState(() {
-      _isScanning = true;
-      _errorMessage = null;
+      _isQuickScanning = true;
     });
 
     final target = _settingsService.settings.defaultTargetCidr;
 
     try {
       await _scanService.runSmartScan(target);
-
       if (!mounted) return;
+
       setState(() {
-        _isScanning = false;
+        _isQuickScanning = false;
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Quick scan completed for $target'),
-        ),
+        SnackBar(content: Text('Quick Smart Scan finished for $target')),
       );
     } catch (e) {
       if (!mounted) return;
+
       setState(() {
-        _isScanning = false;
-        _errorMessage = e.toString();
+        _isQuickScanning = false;
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Quick scan failed: $e'),
-        ),
+        SnackBar(content: Text('Quick Smart Scan failed: $e')),
       );
     }
-  }
-
-  Future<void> _refresh() async {
-    await Future<void>.delayed(const Duration(milliseconds: 300));
-    if (!mounted) return;
-    setState(() {});
-  }
-
-  /// Simple heuristic to guess which host is the router / gateway.
-  DetectedHost? _findLikelyRouter(List<DetectedHost> hosts) {
-    if (hosts.isEmpty) return null;
-
-    // 1) Any hostname that clearly looks like a router
-    final routerNamePatterns = ['router', 'gateway', 'modem', 'homehub'];
-    for (final h in hosts) {
-      final name = h.hostname?.toLowerCase() ?? '';
-      if (routerNamePatterns.any((p) => name.contains(p))) {
-        return h;
-      }
-    }
-
-    // 2) Default gateway style IP (x.x.x.1 or x.x.x.254)
-    for (final h in hosts) {
-      final ip = h.ip;
-      if (ip.endsWith('.1') || ip.endsWith('.254')) {
-        return h;
-      }
-    }
-
-    // 3) Fallback: just the first host
-    return hosts.first;
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final result = _scanService.lastResult;
-    final hasData = result != null && result.hosts.isNotEmpty;
-    final hosts = result?.hosts ?? [];
 
-    final highRiskCount =
-        hosts.where((h) => h.risk == RiskLevel.high).length;
-    final mediumRiskCount =
-        hosts.where((h) => h.risk == RiskLevel.medium).length;
-    final lowRiskCount =
-        hosts.where((h) => h.risk == RiskLevel.low).length;
+    int devices = 0;
+    int high = 0;
+    int medium = 0;
+    int low = 0;
+    double healthScore = 0;
 
-    final totalHosts = hosts.length;
+    if (result != null) {
+      devices = result.hosts.length;
 
-    int securityScore = 100;
-    securityScore -= highRiskCount * 20;
-    securityScore -= mediumRiskCount * 10;
-    if (securityScore < 0) securityScore = 0;
-    if (!hasData) securityScore = 0;
-
-    final sortedHosts = [...hosts]
-      ..sort((a, b) {
-        int riskWeight(RiskLevel r) {
-          switch (r) {
-            case RiskLevel.high:
-              return 3;
-            case RiskLevel.medium:
-              return 2;
-            case RiskLevel.low:
-              return 1;
-          }
+      for (final host in result.hosts) {
+        switch (host.risk) {
+          case RiskLevel.high:
+            high++;
+            break;
+          case RiskLevel.medium:
+            medium++;
+            break;
+          case RiskLevel.low:
+            low++;
+            break;
         }
+      }
 
-        final scoreA = riskWeight(a.risk) * 100 + a.openPorts.length;
-        final scoreB = riskWeight(b.risk) * 100 + b.openPorts.length;
-        return scoreB.compareTo(scoreA);
-      });
+      healthScore = (100 - (high * 35 + medium * 15)).clamp(0, 100).toDouble();
+    }
 
-    final lastScanTime = result?.finishedAt;
-    final routerHost = hasData ? _findLikelyRouter(hosts) : null;
+    final hasScan = result != null;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('SCAN-X Dashboard'),
-        centerTitle: true,
-      ),
-      body: RefreshIndicator(
-        onRefresh: _refresh,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16),
+      backgroundColor: Colors.black,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _HeaderCard(
-                score: securityScore,
-                isScanning: _isScanning,
-                totalHosts: totalHosts,
-                highRisk: highRiskCount,
-                mediumRisk: mediumRiskCount,
-                lowRisk: lowRiskCount,
-                onQuickScan: _handleQuickScan,
+              Text(
+                'SCAN-X Dashboard',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 24),
+              _buildHealthCard(
+                theme: theme,
+                hasScan: hasScan,
+                healthScore: healthScore,
+                devices: devices,
+                high: high,
+                medium: medium,
+                low: low,
               ),
               const SizedBox(height: 16),
-              if (_errorMessage != null) ...[
-                _ErrorBanner(message: _errorMessage!),
-                const SizedBox(height: 12),
-              ],
-              hasData
-                  ? Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _RiskSummaryRow(
-                          highRisk: highRiskCount,
-                          mediumRisk: mediumRiskCount,
-                          lowRisk: lowRiskCount,
-                        ),
-                        const SizedBox(height: 16),
-                        _LastScanInfo(lastScanTime: lastScanTime),
-                        const SizedBox(height: 16),
-                        if (routerHost != null) ...[
-                          _RouterFirmwareCard(routerHost: routerHost),
-                          const SizedBox(height: 16),
-                        ],
-                        _TopRiskyDevicesSection(
-                          hosts: sortedHosts.take(5).toList(),
-                        ),
-                        const SizedBox(height: 24),
-                        const _HintCard(),
-                      ],
-                    )
-                  : const _EmptyState(),
+              _buildQuickActionsCard(theme),
+              const SizedBox(height: 16),
+              _buildLastScanCard(theme, result),
             ],
           ),
         ),
       ),
     );
   }
-}
 
-/// HEADER CARD: overall security score + quick scan button
-class _HeaderCard extends StatelessWidget {
-  final int score;
-  final bool isScanning;
-  final int totalHosts;
-  final int highRisk;
-  final int mediumRisk;
-  final int lowRisk;
-  final VoidCallback onQuickScan;
-
-  const _HeaderCard({
-    required this.score,
-    required this.isScanning,
-    required this.totalHosts,
-    required this.highRisk,
-    required this.mediumRisk,
-    required this.lowRisk,
-    required this.onQuickScan,
-  });
-
-  Color _scoreColor() {
-    if (score >= 80) return Colors.greenAccent;
-    if (score >= 50) return Colors.orangeAccent;
-    if (score > 0) return Colors.redAccent;
-    return Colors.grey;
-  }
-
-  String _scoreLabel() {
-    if (score >= 80) return 'Secure';
-    if (score >= 50) return 'Moderate risk';
-    if (score > 0) return 'High risk';
-    return 'No data yet';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scoreColor = _scoreColor();
+  Widget _buildHealthCard({
+    required ThemeData theme,
+    required bool hasScan,
+    required double healthScore,
+    required int devices,
+    required int high,
+    required int medium,
+    required int low,
+  }) {
+    final label = hasScan ? '${healthScore.toStringAsFixed(0)}%' : 'No data';
+    final barValue = hasScan ? healthScore / 100 : 0.0;
 
     return Container(
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF141E30), Color(0xFF243B55)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.25),
-            blurRadius: 10,
-            offset: const Offset(0, 6),
-          ),
-        ],
+        color: const Color(0xFF111111),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF222222)),
       ),
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 120,
-            height: 120,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                SizedBox(
-                  width: 110,
-                  height: 110,
-                  child: CircularProgressIndicator(
-                    value: 1.0,
-                    strokeWidth: 10,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      Colors.white.withOpacity(0.1),
-                    ),
-                  ),
-                ),
-                SizedBox(
-                  width: 110,
-                  height: 110,
-                  child: CircularProgressIndicator(
-                    value: score / 100,
-                    strokeWidth: 10,
-                    valueColor: AlwaysStoppedAnimation<Color>(scoreColor),
-                    backgroundColor: Colors.transparent,
-                  ),
-                ),
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      '$score',
-                      style: theme.textTheme.headlineMedium?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      '/100',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: Colors.white70,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Network Health',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  _scoreLabel(),
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: scoreColor,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Devices: $totalHosts\n'
-                  'High: $highRisk   Medium: $mediumRisk   Low: $lowRisk',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: Colors.white70,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.black87,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 8,
-                    ),
-                  ),
-                  onPressed: isScanning ? null : onQuickScan,
-                  icon: isScanning
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.bolt),
-                  label: Text(
-                    isScanning ? 'Scanning…' : 'Quick Scan',
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _RiskSummaryRow extends StatelessWidget {
-  final int highRisk;
-  final int mediumRisk;
-  final int lowRisk;
-
-  const _RiskSummaryRow({
-    required this.highRisk,
-    required this.mediumRisk,
-    required this.lowRisk,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    Widget buildCard(String title, int count, Color color) {
-      return Expanded(
-        child: Card(
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-            child: Column(
-              children: [
-                Text(
-                  '$count',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: color,
-                      ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.bodySmall,
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Row(
-      children: [
-        buildCard('High risk', highRisk, Colors.red),
-        const SizedBox(width: 8),
-        buildCard('Medium risk', mediumRisk, Colors.orange),
-        const SizedBox(width: 8),
-        buildCard('Low risk', lowRisk, Colors.green),
-      ],
-    );
-  }
-}
-
-class _LastScanInfo extends StatelessWidget {
-  final DateTime? lastScanTime;
-
-  const _LastScanInfo({required this.lastScanTime});
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: ListTile(
-        leading: const Icon(Icons.history),
-        title: const Text('Last scan'),
-        subtitle: Text(
-          lastScanTime != null
-              ? lastScanTime.toString()
-              : 'No scan has been run yet',
-        ),
-      ),
-    );
-  }
-}
-
-/// Milestone 2: router / firmware advice card
-class _RouterFirmwareCard extends StatelessWidget {
-  final DetectedHost routerHost;
-
-  const _RouterFirmwareCard({required this.routerHost});
-
-  bool _hasMgmtPorts(List<OpenPort> ports) {
-    const mgmtPorts = [80, 443, 8080, 8443];
-    return ports.any((p) => mgmtPorts.contains(p.port));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final hasMgmt = _hasMgmtPorts(routerHost.openPorts);
-
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.router, color: Colors.amber),
-                const SizedBox(width: 8),
-                Text(
-                  'Router firmware check',
-                  style: theme.textTheme.titleMedium,
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '${routerHost.hostname ?? 'Likely router'} • ${routerHost.ip}',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: Colors.grey[600],
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Keeping your router firmware up to date fixes critical security bugs. '
-              'SCAN-X can see that this device looks like your router, but it cannot '
-              'see the exact firmware version.',
-              style: theme.textTheme.bodySmall,
-            ),
-            const SizedBox(height: 8),
-            if (hasMgmt)
-              Text(
-                'Tip: The router management page appears to be exposed on the local network '
-                '(web admin port detected). Make sure remote/WAN access is disabled unless '
-                'you really need it.',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: Colors.orange[700],
-                ),
-              ),
-            const SizedBox(height: 8),
-            Text(
-              'Recommended every 6–12 months:',
-              style: theme.textTheme.bodySmall?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 4),
-            _bullet('Log in to your router admin page (usually 192.168.x.1).'),
-            _bullet('Check for “Firmware update” or “Software update”.'),
-            _bullet('Apply updates from the vendor only, then reboot.'),
-            _bullet('Disable remote/WAN admin if you don’t use it.'),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _bullet(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 2),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('• '),
-          Expanded(child: Text(text)),
-        ],
-      ),
-    );
-  }
-}
-
-class _TopRiskyDevicesSection extends StatelessWidget {
-  final List<DetectedHost> hosts;
-
-  const _TopRiskyDevicesSection({required this.hosts});
-
-  Color _riskColor(RiskLevel risk) {
-    switch (risk) {
-      case RiskLevel.high:
-        return Colors.red;
-      case RiskLevel.medium:
-        return Colors.orange;
-      case RiskLevel.low:
-        return Colors.green;
-    }
-  }
-
-  String _riskLabel(RiskLevel risk) {
-    switch (risk) {
-      case RiskLevel.high:
-        return 'High';
-      case RiskLevel.medium:
-        return 'Medium';
-      case RiskLevel.low:
-        return 'Low';
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (hosts.isEmpty) {
-      return Card(
-        elevation: 2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: const Padding(
-          padding: EdgeInsets.all(16),
-          child: Text('No devices to show yet. Run a scan first.'),
-        ),
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Top risky devices',
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
-        const SizedBox(height: 8),
-        Card(
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: hosts.length,
-            separatorBuilder: (_, __) => const Divider(height: 1),
-            itemBuilder: (context, index) {
-              final host = hosts[index];
-              final riskColor = _riskColor(host.risk);
-
-              return ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: riskColor.withOpacity(0.15),
-                  child: Icon(
-                    Icons.device_hub,
-                    color: riskColor,
-                  ),
+          Row(
+            children: [
+              const Icon(Icons.shield, color: Color(0xFF1ECB7B)),
+              const SizedBox(width: 8),
+              Text(
+                'Network health',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
                 ),
-                title: Text(host.hostname ?? host.ip),
-                subtitle: Text(
-                  '${host.ip} • ${host.openPorts.length} open ports',
+              ),
+              const Spacer(),
+              Text(
+                label,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
                 ),
-                trailing: Container(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                  decoration: BoxDecoration(
-                    color: riskColor.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    _riskLabel(host.risk),
-                    style: TextStyle(
-                      color: riskColor,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-              );
-            },
+              ),
+            ],
           ),
-        ),
-      ],
-    );
-  }
-}
-
-class _HintCard extends StatelessWidget {
-  const _HintCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 1,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: const Padding(
-        padding: EdgeInsets.all(12),
-        child: Text(
-          'Tip: Use Quick Scan for a fast overview of your network. '
-          'For deeper analysis, run a full scan from the Scan tab.',
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState();
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-
-    return Padding(
-      padding: const EdgeInsets.only(top: 32),
-      child: Column(
-        children: [
-          const Icon(
-            Icons.shield_outlined,
-            size: 64,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'No scans yet',
-            style: textTheme.titleLarge,
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              minHeight: 10,
+              value: barValue,
+              backgroundColor: const Color(0xFF222222),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                hasScan ? const Color(0xFF1ECB7B) : Colors.grey,
+              ),
+            ),
           ),
           const SizedBox(height: 8),
           Text(
-            'Run a Quick Scan from here or go to the Scan tab to start.',
-            style: textTheme.bodyMedium,
-            textAlign: TextAlign.center,
+            hasScan
+                ? 'Devices: $devices • High: $high • Medium: $medium • Low: $low'
+                : 'No scans yet. Run a Quick Smart Scan to get your first health score.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: Colors.grey[400],
+            ),
           ),
         ],
       ),
     );
   }
-}
 
-class _ErrorBanner extends StatelessWidget {
-  final String message;
+  Widget _buildQuickActionsCard(ThemeData theme) {
+    final cidr = _settingsService.settings.defaultTargetCidr;
 
-  const _ErrorBanner({required this.message});
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      color: Colors.red.shade50,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF111111),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF222222)),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            const Icon(Icons.error_outline, color: Colors.red),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                message,
-                style: TextStyle(
-                  color: Colors.red.shade900,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Quick actions',
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1ECB7B),
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(999),
                 ),
               ),
+              onPressed: _isQuickScanning ? null : _runQuickScan,
+              icon: _isQuickScanning
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(Colors.black),
+                      ),
+                    )
+                  : const Icon(Icons.bolt),
+              label: Text(
+                _isQuickScanning ? 'Scanning…' : 'Quick Smart Scan',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
             ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Uses your default target from Settings (e.g. $cidr). '
+            'You can inspect details in the Scan and Devices tabs.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: Colors.grey[400],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLastScanCard(ThemeData theme, ScanResult? result) {
+    return Expanded(
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: const Color(0xFF111111),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFF222222)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Last scan summary',
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            if (result == null)
+              Text(
+                'No scans yet. Use Quick Smart Scan or go to the Scan tab to start.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: Colors.grey[400],
+                ),
+              )
+            else
+              Text(
+                'Target: ${result.target}\n'
+                'Devices found: ${result.hosts.length}\n'
+                'Started: ${result.startedAt}\n'
+                'Finished: ${result.finishedAt}',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: Colors.grey[400],
+                ),
+              ),
           ],
         ),
       ),

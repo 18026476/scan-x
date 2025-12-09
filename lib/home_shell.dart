@@ -1,44 +1,48 @@
-ï»¿import 'package:flutter/material.dart';
-import 'dashboard_screen.dart';
-import 'scan_screen.dart';
-import 'devices_screen.dart';
-import 'settings_screen.dart';
+import 'package:flutter/material.dart';
+import 'package:scanx_app/features/dashboard/dashboard_screen.dart';
+import 'package:scanx_app/features/scan/scan_screen.dart';
+import 'package:scanx_app/features/devices/devices_screen.dart';
+import 'package:scanx_app/features/settings/settings_screen.dart';
 
+/// Legacy shell (not the main entry) – kept compiling clean for future use.
 class HomeShell extends StatefulWidget {
-  const HomeShell({Key? key}) : super(key: key);
+  const HomeShell({super.key});
 
   @override
   State<HomeShell> createState() => _HomeShellState();
 }
 
 class _HomeShellState extends State<HomeShell> {
-  int _selectedIndex = 0;
+  int _currentIndex = 0;
 
-  // Keep the same instances of each tab alive
-  late final List<Widget> _pages = const [
-    DashboardScreen(),
-    ScanScreen(),
+  static final List<Widget> _screens = <Widget>[
+    const DashboardScreen(),
+    const ScanScreen(),
     DevicesScreen(),
-    SettingsScreen(),
+    const SettingsScreen(),
   ];
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _pages,
-      ),
+      body: _screens[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (i) => setState(() => _selectedIndex = i),
+        currentIndex: _currentIndex,
+        onTap: _onItemTapped,
+        type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.dashboard),
             label: 'Dashboard',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.shield),
+            icon: Icon(Icons.bolt),
             label: 'Scan',
           ),
           BottomNavigationBarItem(

@@ -1,19 +1,15 @@
-﻿// lib/features/devices/devices_screen.dart
-
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:scanx_app/core/services/services.dart';
 
 import 'device_details_screen.dart';
 
 class DevicesScreen extends StatelessWidget {
-  DevicesScreen({super.key});
-
-  final ScanService _scanService = ScanService();
+  const DevicesScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final result = _scanService.lastResult;
+    final result = ScanService().lastResult;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -127,8 +123,8 @@ class DevicesScreen extends StatelessWidget {
                                       openPorts.isEmpty
                                           ? 'No open ports detected.'
                                           : '${openPorts.length} open port(s): '
-                                          '${openPorts.take(3).map((p) => '${p.port}/${p.protocol}').join(', ')}'
-                                          '${openPorts.length > 3 ? '...' : ''}',
+                                              '${openPorts.take(3).map((p) => '${p.port}/${p.protocol}').join(', ')}'
+                                              '${openPorts.length > 3 ? '...' : ''}',
                                       style: theme.textTheme.bodySmall
                                           ?.copyWith(
                                         color: Colors.grey[400],

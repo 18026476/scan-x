@@ -1,6 +1,4 @@
-﻿// lib/core/services/scan_service.dart
-
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:io';
 
 import 'settings_service.dart';
@@ -137,15 +135,15 @@ class ScanService {
     // ScanMode influences which ports & timing we use.
     switch (settings.scanMode) {
       case ScanMode.performance:
-      // Very fast – top 200 ports.
+        // Very fast – top 200 ports.
         args.addAll(['--top-ports', '200']);
         break;
       case ScanMode.balanced:
-      // Default – top 1000 ports.
+        // Default – top 1000 ports.
         args.addAll(['--top-ports', '1000']);
         break;
       case ScanMode.paranoid:
-      // More thorough even for "Smart" – top 5000 ports.
+        // More thorough even for "Smart" – top 5000 ports.
         args.addAll(['--top-ports', '5000', '-T3']);
         break;
     }
@@ -164,14 +162,14 @@ class ScanService {
     // Tune timing/profile by ScanMode.
     switch (settings.scanMode) {
       case ScanMode.performance:
-      // Slightly more aggressive but still full.
+        // Slightly more aggressive but still full.
         args.add('-T4');
         break;
       case ScanMode.balanced:
         args.add('-T3');
         break;
       case ScanMode.paranoid:
-      // Slower, more careful.
+        // Slower, more careful.
         args.add('-T2');
         break;
     }
@@ -205,7 +203,7 @@ class ScanService {
 
   final RegExp _hostRegex = RegExp(r'^Nmap scan report for (.+)$');
   final RegExp _portLineRegex =
-  RegExp(r'^(\d+)/(tcp|udp)\s+open\s+([\w\-\?\.\+]+)');
+      RegExp(r'^(\d+)/(tcp|udp)\s+open\s+([\w\-\?\.\+]+)');
 
   List<DetectedHost> _parseNmapOutput(String stdoutStr) {
     final lines = stdoutStr.split('\n');
