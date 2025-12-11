@@ -1,7 +1,4 @@
-import 'package:scanx_app/features/router/router_iot_card.dart';
-import 'package:scanx_app/features/router/router_iot_security.dart';
-
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:scanx_app/core/services/scan_service.dart';
 import 'package:scanx_app/core/services/settings_service.dart';
 
@@ -178,7 +175,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const SizedBox(height: 8),
           Text(
             hasScan
-                ? 'Devices: $devices � High: $high � Medium: $medium � Low: $low'
+                ? 'Devices: $devices • High: $high • Medium: $medium • Low: $low'
                 : 'No scans yet. Run a Quick Smart Scan to get your first health score.',
             style: theme.textTheme.bodySmall?.copyWith(
               color: Colors.grey[400],
@@ -234,7 +231,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     )
                   : const Icon(Icons.bolt),
               label: Text(
-                _isQuickScanning ? 'Scanning�' : 'Quick Smart Scan',
+                _isQuickScanning ? 'Scanning…' : 'Quick Smart Scan',
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
