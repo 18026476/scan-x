@@ -72,6 +72,9 @@ class SettingsService {
   static const _kAutoScanOnLaunch = '${_prefix}autoScanOnLaunch';
   static const _kKeepScreenAwake = '${_prefix}keepScreenAwake';
 
+  // V1 release: clears previous scan results when a new scan starts
+  static const _kAutoClearScan = '${_prefix}autoClearScan';
+
   static const _kAutoUpdateApp = '${_prefix}autoUpdateApp';
   static const _kNotifyBeforeUpdate = '${_prefix}notifyBeforeUpdate';
   static const _kBetaUpdates = '${_prefix}betaUpdates';
@@ -374,6 +377,11 @@ class SettingsService {
   Future<void> setKeepScreenAwake(bool value) =>
       _prefs.setBool(_kKeepScreenAwake, value);
 
+  // V1 release: Auto-clear previous scan results when starting a new scan
+  bool get autoClearScan => _prefs.getBool(_kAutoClearScan) ?? true;
+  Future<void> setAutoClearScan(bool value) =>
+      _prefs.setBool(_kAutoClearScan, value);
+
   // ------- Updates & AI -------
 
   bool get autoUpdateApp => _prefs.getBool(_kAutoUpdateApp) ?? true;
@@ -465,20 +473,20 @@ class SettingsService {
 
   /// Aggregate view used by ScanService for Smart / Full scan behaviour.
   ScanSettings get settings => ScanSettings(
-        defaultTargetCidr: defaultTargetCidr,
-        scanMode: scanMode,
-        hostDiscoveryEnabled: autoDetectLocalNetwork,
-        fullScanAllHosts: continuousMonitoring,
-        maxDeepHosts: hostsPerScan,
-        portsPerPhase: 2000,
-        highRiskHighPorts: 3,
-        highRiskTotalPorts: 15,
-        mediumRiskHighPorts: 1,
-        mediumRiskTotalPorts: 5,
-        customHighRiskPorts: const [21, 22, 23, 80, 445, 3389, 1900],
-        keepOnlyLastScan: false,
-        autoQuickScanOnStartup: autoScanOnLaunch,
-      );
+    defaultTargetCidr: defaultTargetCidr,
+    scanMode: scanMode,
+    hostDiscoveryEnabled: autoDetectLocalNetwork,
+    fullScanAllHosts: continuousMonitoring,
+    maxDeepHosts: hostsPerScan,
+    portsPerPhase: 2000,
+    highRiskHighPorts: 3,
+    highRiskTotalPorts: 15,
+    mediumRiskHighPorts: 1,
+    mediumRiskTotalPorts: 5,
+    customHighRiskPorts: const [21, 22, 23, 80, 445, 3389, 1900],
+    keepOnlyLastScan: false,
+    autoQuickScanOnStartup: autoScanOnLaunch,
+  );
 
   /// Optional: write a whole profile back.
   Future<void> updateScanSettings(ScanSettings value) async {
@@ -486,8 +494,7 @@ class SettingsService {
     await setScanMode(value.scanMode);
     await setHostsPerScan(value.maxDeepHosts);
     await setAutoScanOnLaunch(value.autoQuickScanOnStartup);
-    // You can expand this later to also adjust other settings
-    // based on scanMode (e.g. continuousMonitoring, etc.).
+    // You can expand this later to also adjust other settings.
   }
 }
 
@@ -551,22 +558,17 @@ class ScanSettings {
     return ScanSettings(
       defaultTargetCidr: defaultTargetCidr ?? this.defaultTargetCidr,
       scanMode: scanMode ?? this.scanMode,
-      hostDiscoveryEnabled:
-          hostDiscoveryEnabled ?? this.hostDiscoveryEnabled,
+      hostDiscoveryEnabled: hostDiscoveryEnabled ?? this.hostDiscoveryEnabled,
       fullScanAllHosts: fullScanAllHosts ?? this.fullScanAllHosts,
       maxDeepHosts: maxDeepHosts ?? this.maxDeepHosts,
       portsPerPhase: portsPerPhase ?? this.portsPerPhase,
       highRiskHighPorts: highRiskHighPorts ?? this.highRiskHighPorts,
       highRiskTotalPorts: highRiskTotalPorts ?? this.highRiskTotalPorts,
-      mediumRiskHighPorts:
-          mediumRiskHighPorts ?? this.mediumRiskHighPorts,
-      mediumRiskTotalPorts:
-          mediumRiskTotalPorts ?? this.mediumRiskTotalPorts,
-      customHighRiskPorts:
-          customHighRiskPorts ?? this.customHighRiskPorts,
+      mediumRiskHighPorts: mediumRiskHighPorts ?? this.mediumRiskHighPorts,
+      mediumRiskTotalPorts: mediumRiskTotalPorts ?? this.mediumRiskTotalPorts,
+      customHighRiskPorts: customHighRiskPorts ?? this.customHighRiskPorts,
       keepOnlyLastScan: keepOnlyLastScan ?? this.keepOnlyLastScan,
-      autoQuickScanOnStartup:
-          autoQuickScanOnStartup ?? this.autoQuickScanOnStartup,
+      autoQuickScanOnStartup: autoQuickScanOnStartup ?? this.autoQuickScanOnStartup,
     );
   }
 }
