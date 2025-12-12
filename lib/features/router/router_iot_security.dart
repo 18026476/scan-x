@@ -58,12 +58,7 @@ class RouterIotSecurityService {
   RouterIotSecurityService() : _settings = SettingsService();
 
   /// Build a summary from whatever host list the scan engine produced.
-  ///
-  /// This is intentionally tolerant of different host shapes.
-  RouterIotSecuritySummary buildSummary(List hosts) {
-    // Only keep DetectedHost instances if that type exists in your ScanService.
-    final detectedHosts = hosts.whereType<DetectedHost>().toList();
-
+  RouterIotSecuritySummary buildSummary(List<DetectedHost> detectedHosts) {
     final router = _pickRouter(detectedHosts);
     final iotDevices = _pickIotDevices(detectedHosts);
 
@@ -73,9 +68,9 @@ class RouterIotSecurityService {
     if (router == null) {
       issues.add(const RouterIotIssue(
         type: RouterIotIssueType.routerNotFound,
-        title: 'Router not detected',
+        title: 'Review recommended',
         description:
-            'SCAN-X could not identify your router. Ensure you scanned the correct subnet (e.g. 192.168.0.0/24).',
+        'SCAN-X could not identify your router. Ensure you scanned the correct subnet (e.g. 192.168.0.0/24).',
       ));
     } else {
       // 1) Dangerous management ports
@@ -84,44 +79,44 @@ class RouterIotSecurityService {
         if (risky.isNotEmpty) {
           issues.add(RouterIotIssue(
             type: RouterIotIssueType.riskyRouterPorts,
-            title: 'Router exposes risky management ports',
+            title: 'Action needed',
             description:
-                'Your router appears to expose high-risk ports: ${risky.join(", ")}. Restrict access, or close them on the router UI.',
+            'Your router appears to expose high-risk ports: ${risky.join(", ")}. Restrict access, or close them in the router UI.',
             isHighSeverity: true,
           ));
         }
       }
 
-      // 2) UPnP (port 1900)
+      // 2) UPnP (port 1900) - based on scan open ports
       if (_settings.routerUpnpCheck) {
         if (_hostHasPort(router, 1900)) {
           issues.add(const RouterIotIssue(
             type: RouterIotIssueType.possibleUpnp,
-            title: 'UPnP may be enabled',
+            title: 'Review recommended',
             description:
-                'Port 1900/UDP typically indicates UPnP. Disable UPnP in your router unless you really need automatic port opening.',
+            'Port 1900 (SSDP/UPnP) may be open. Disable UPnP in your router unless you need automatic port forwarding.',
             isHighSeverity: true,
           ));
         }
       }
 
-      // 3) DNS hijack – informational only
+      // 3) DNS hijack â€“ informational advisory
       if (_settings.routerDnsHijack) {
         issues.add(const RouterIotIssue(
           type: RouterIotIssueType.possibleDnsHijack,
-          title: 'Check router DNS configuration',
+          title: 'Review recommended',
           description:
-              'SCAN-X cannot directly detect DNS hijacking. Log into your router and verify DNS servers are set to trusted providers.',
+          'SCAN-X cannot directly detect DNS hijacking. Log into your router and verify DNS servers are set to trusted providers.',
         ));
       }
 
-      // 4) WPS – informational only
+      // 4) WPS â€“ informational advisory
       if (_settings.routerWpsCheck) {
         issues.add(const RouterIotIssue(
           type: RouterIotIssueType.possibleWps,
-          title: 'Check WPS status in router',
+          title: 'Review recommended',
           description:
-              'Wi-Fi Protected Setup (WPS) is often insecure. Disable WPS in your router’s wireless settings if possible.',
+          'WPS is often insecure. Disable WPS in your routerâ€™s wireless settings if possible.',
         ));
       }
     }
@@ -132,7 +127,6 @@ class RouterIotSecurityService {
 
     for (final host in iotDevices) {
       final risk = _estimateIotRisk(host);
-
       if (risk == _SimpleRisk.high) high++;
       if (risk == _SimpleRisk.medium) med++;
     }
@@ -140,9 +134,9 @@ class RouterIotSecurityService {
     if (high > 0) {
       issues.add(RouterIotIssue(
         type: RouterIotIssueType.iotHighRisk,
-        title: 'High-risk IoT devices detected',
+        title: 'Action needed',
         description:
-            '$high IoT devices expose sensitive services (e.g. Telnet/FTP/SMB). Change default passwords and restrict remote access.',
+        '$high IoT devices expose sensitive services (e.g. Telnet/FTP/SMB). Change default passwords and restrict remote access.',
         isHighSeverity: true,
       ));
     }
@@ -150,9 +144,9 @@ class RouterIotSecurityService {
     if (med > 0) {
       issues.add(RouterIotIssue(
         type: RouterIotIssueType.iotMediumRisk,
-        title: 'Medium-risk IoT devices present',
+        title: 'Review recommended',
         description:
-            '$med IoT devices show questionable exposure. Check for firmware updates and review their network access.',
+        '$med IoT devices show questionable exposure. Check for firmware updates and review their network access.',
       ));
     }
 
@@ -167,23 +161,23 @@ class RouterIotSecurityService {
 
   // -------------------------- HELPERS --------------------------
 
-  /// Very dumb router guess:
-  ///  - IP ending in .1 or .254
-  ///  - otherwise, first host in the list
+  /// Router heuristic:
+  /// - IP ending in .1 or .254
+  /// - otherwise, first host in the list
   DetectedHost? _pickRouter(List<DetectedHost> hosts) {
     if (hosts.isEmpty) return null;
 
     for (final h in hosts) {
-      final ip = (h as dynamic).ip ?? '';
+      final ip = h.ip;
       if (ip.endsWith('.1') || ip.endsWith('.254')) return h;
     }
-
     return hosts.first;
   }
 
-  /// Guess IoT devices using simple name keywords.
+  /// IoT heuristic: ONLY use fields that exist (hostname/ip).
+  /// This avoids crashing when different models are used.
   List<DetectedHost> _pickIotDevices(List<DetectedHost> hosts) {
-    final keywords = [
+    final keywords = <String>[
       'camera',
       'cctv',
       'tv',
@@ -196,44 +190,36 @@ class RouterIotSecurityService {
       'bulb',
       'thermostat',
       'hub',
+      'doorbell',
+      'ring',
+      'nest',
     ];
 
     return hosts.where((h) {
-      final label = ((h as dynamic).displayName ?? '').toLowerCase();
-      final vendor = ((h as dynamic).vendor ?? '').toLowerCase();
-      final combined = '$label $vendor';
-      return keywords.any(combined.contains);
+      final hn = (h.hostname ?? '').toLowerCase();
+      final ip = h.ip.toLowerCase();
+      final combined = '$hn $ip';
+      return keywords.any((k) => combined.contains(k));
     }).toList();
   }
 
-  /// Return a list of risky router ports (based on either simple int ports
-  /// or richer port objects from your Nmap parser).
   List<int> _detectRiskyRouterPorts(DetectedHost host) {
     final ports = _safePorts(host);
-    const risky = {21, 22, 23, 80, 443, 8080, 7547, 3389};
+    const risky = {21, 22, 23, 80, 443, 8080, 7547, 3389, 445, 1900};
     return ports.where((p) => risky.contains(p)).toList();
   }
 
   /// Normalise whatever `openPorts` shape you have into a simple List<int>.
-  ///
   /// Supports:
-  ///  - List<int>
-  ///  - List<dynamic> where each item has a `.port` int field
+  ///  - List<OpenPort> (your current model)
+  ///  - List<int> (legacy)
   List<int> _safePorts(DetectedHost host) {
-    final raw = (host as dynamic).openPorts;
-    if (raw == null) return [];
-    if (raw is List<int>) return raw;
+    final raw = host.openPorts;
 
+    // Your current model: List<OpenPort>
     final list = <int>[];
-    if (raw is List) {
-      for (final p in raw) {
-        try {
-          final x = (p as dynamic).port as int?;
-          if (x != null) list.add(x);
-        } catch (_) {
-          // ignore malformed entries
-        }
-      }
+    for (final p in raw) {
+      list.add(p.port);
     }
     return list;
   }

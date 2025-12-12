@@ -1,5 +1,8 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:scanx_app/core/services/services.dart';
+
+import 'package:scanx_app/features/router/router_iot_card.dart';
+import 'package:scanx_app/features/router/router_iot_security.dart';
 
 import 'device_details_screen.dart';
 
@@ -36,6 +39,7 @@ class DevicesScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 24),
+
               if (result == null)
                 Expanded(
                   child: Center(
@@ -50,94 +54,108 @@ class DevicesScreen extends StatelessWidget {
                 )
               else
                 Expanded(
-                  child: ListView.builder(
-                    itemCount: result.hosts.length,
-                    itemBuilder: (context, index) {
-                      final host = result.hosts[index];
-                      final openPorts = host.openPorts;
-                      final risk = host.risk;
+                  child: Column(
+                    children: [
+                      RouterIotCard(
+                        scanService: ScanService(),
+                        securityService: RouterIotSecurityService(),
+                      ),
+                      const SizedBox(height: 12),
 
-                      return InkWell(
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => DeviceDetailsScreen(host: host),
-                            ),
-                          );
-                        },
-                        borderRadius: BorderRadius.circular(16),
-                        child: Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF111111),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: const Color(0xFF222222),
-                            ),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 14,
-                          ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Icon(
-                                Icons.devices_other,
-                                color: Color(0xFF1ECB7B),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: result.hosts.length,
+                          itemBuilder: (context, index) {
+                            final host = result.hosts[index];
+                            final openPorts = host.openPorts;
+                            final risk = host.risk;
+
+                            return InkWell(
+                              onTap: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        DeviceDetailsScreen(host: host),
+                                  ),
+                                );
+                              },
+                              borderRadius: BorderRadius.circular(16),
+                              child: Container(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF111111),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: const Color(0xFF222222),
+                                  ),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 14,
+                                ),
+                                child: Row(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            host.hostname ?? host.ip,
-                                            style: theme
-                                                .textTheme.titleMedium
+                                    const Icon(
+                                      Icons.devices_other,
+                                      color: Color(0xFF1ECB7B),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Expanded(
+                                                child: Text(
+                                                  host.hostname ?? host.ip,
+                                                  style: theme
+                                                      .textTheme.titleMedium
+                                                      ?.copyWith(
+                                                    color: Colors.white,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              _buildRiskChip(risk),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            host.hostname == null
+                                                ? 'IP: ${host.ip}'
+                                                : 'IP: ${host.ip} • Hostname resolved',
+                                            style: theme.textTheme.bodySmall
                                                 ?.copyWith(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.bold,
+                                              color: Colors.grey[400],
                                             ),
                                           ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        _buildRiskChip(risk),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      host.hostname == null
-                                          ? 'IP: ${host.ip}'
-                                          : 'IP: ${host.ip} • Hostname resolved',
-                                      style: theme.textTheme.bodySmall
-                                          ?.copyWith(
-                                        color: Colors.grey[400],
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      openPorts.isEmpty
-                                          ? 'No open ports detected.'
-                                          : '${openPorts.length} open port(s): '
-                                              '${openPorts.take(3).map((p) => '${p.port}/${p.protocol}').join(', ')}'
-                                              '${openPorts.length > 3 ? '...' : ''}',
-                                      style: theme.textTheme.bodySmall
-                                          ?.copyWith(
-                                        color: Colors.grey[400],
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            openPorts.isEmpty
+                                                ? 'No open ports detected.'
+                                                : '${openPorts.length} open port(s): '
+                                                '${openPorts.take(3).map((p) => '${p.port}/${p.protocol}').join(', ')}'
+                                                '${openPorts.length > 3 ? '...' : ''}',
+                                            style: theme.textTheme.bodySmall
+                                                ?.copyWith(
+                                              color: Colors.grey[400],
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
-                            ],
-                          ),
+                            );
+                          },
                         ),
-                      );
-                    },
+                      ),
+                    ],
                   ),
                 ),
             ],
@@ -185,12 +203,12 @@ class DevicesScreen extends StatelessWidget {
   Color _riskColor(RiskLevel risk) {
     switch (risk) {
       case RiskLevel.high:
-        return const Color(0xFFFF5252); // red
+        return const Color(0xFFFF5252);
       case RiskLevel.medium:
-        return const Color(0xFFFFC107); // amber
+        return const Color(0xFFFFC107);
       case RiskLevel.low:
       default:
-        return const Color(0xFF1ECB7B); // green
+        return const Color(0xFF1ECB7B);
     }
   }
 }
