@@ -1,332 +1,125 @@
-﻿import 'dart:async';
-import 'dart:io';
+﻿// lib/core/services/scan_service.dart
+//
+// Central scan engine for SCAN-X.
+// Exposes a singleton [scanService], a reactive list of [DetectedHost],
+// and helpers for Smart / Full scans backed by Nmap.
 
-import 'settings_service.dart';
+import 'package:flutter/foundation.dart';
+import 'package:scanx_app/core/services/nmap_engine.dart';
 
-/// Basic risk level used across the app.
-enum RiskLevel {
-  low,
-  medium,
-  high,
-}
+/// Simple risk classification for devices.
+enum RiskLevel { low, medium, high }
 
-/// Represents a single open port on a host.
-class OpenPort {
-  final int port;
-  final String protocol;
-  final String serviceName;
-
-  OpenPort({
-    required this.port,
-    required this.protocol,
-    required this.serviceName,
-  });
-
-  /// Backwards-compat: some UI still calls `port.service`.
-  String get service => serviceName;
-}
-
-/// Represents a detected host in the scan result.
+/// One device / host discovered on the network.
 class DetectedHost {
-  final String address; // IP or hostname
-  final String? hostname;
-  final List<OpenPort> openPorts;
-  final RiskLevel risk;
+  final String ip;
+  final String? displayName;
+  final String? macAddress;
+  final String? vendor;
+  final String? deviceType;
 
-  DetectedHost({
-    required this.address,
-    required this.hostname,
-    required this.openPorts,
-    required this.risk,
-  });
+  /// Keep this as List<int> for v1 stability across screens.
+  final List<int> openPorts;
 
-  /// Backwards-compat: older code uses `host.ip`.
-  String get ip => address;
-}
+  RiskLevel get overallRisk {
+    if (openPorts.isEmpty) return RiskLevel.low;
 
-/// Overall scan result from a single Smart/Full scan.
-class ScanResult {
-  final String target;
-  final DateTime startedAt;
-  final DateTime finishedAt;
-  final List<DetectedHost> hosts;
+    final hasDangerous = openPorts.any((p) => p == 22 || p == 23 || p == 3389 || p == 445);
+    if (hasDangerous) return RiskLevel.high;
+    if (openPorts.length >= 3) return RiskLevel.medium;
+    return RiskLevel.low;
+  }
 
-  ScanResult({
-    required this.target,
-    required this.startedAt,
-    required this.finishedAt,
-    required this.hosts,
+  const DetectedHost({
+    required this.ip,
+    this.displayName,
+    this.macAddress,
+    this.vendor,
+    this.deviceType,
+    this.openPorts = const <int>[],
   });
 }
 
-/// Main service that talks to nmap and parses output.
 class ScanService {
   ScanService._internal();
   static final ScanService _instance = ScanService._internal();
   factory ScanService() => _instance;
 
-  /// Last completed scan (Smart or Full).
-  ScanResult? lastResult;
+  final ValueNotifier<List<DetectedHost>> detectedHostsNotifier =
+      ValueNotifier<List<DetectedHost>>(<DetectedHost>[]);
 
-  // ---------------------------------------------------------------------------
-  // PUBLIC API
-  // ---------------------------------------------------------------------------
+  List<DetectedHost> get detectedHosts => detectedHostsNotifier.value;
 
-  /// Fast "Smart Scan" – focuses on common ports and speed.
-  Future<ScanResult> runSmartScan(String target) async {
-    final settings = SettingsService().settings;
-    final started = DateTime.now();
+  final ValueNotifier<bool> isScanning = ValueNotifier<bool>(false);
+  final ValueNotifier<String?> lastError = ValueNotifier<String?>(null);
 
-    final args = _buildSmartScanArgs(target, settings);
-    final stdoutStr = await _runNmap(args);
-
-    final hosts = _parseNmapOutput(stdoutStr);
-    final finished = DateTime.now();
-
-    final result = ScanResult(
-      target: target,
-      startedAt: started,
-      finishedAt: finished,
-      hosts: hosts,
-    );
-
-    lastResult = result;
-    return result;
+  void clearResults() {
+    detectedHostsNotifier.value = <DetectedHost>[];
   }
 
-  /// Deep "Full Scan" – scans all 1–65535 ports.
-  Future<ScanResult> runFullScan(String target) async {
-    final settings = SettingsService().settings;
-    final started = DateTime.now();
+  Future<void> runSmartScan(String target) async {
+    if (isScanning.value) return;
+    isScanning.value = true;
+    lastError.value = null;
 
-    final args = _buildFullScanArgs(target, settings);
-    final stdoutStr = await _runNmap(args);
+    // Blank devices before scan (your requirement)
+    clearResults();
 
-    final hosts = _parseNmapOutput(stdoutStr);
-    final finished = DateTime.now();
+    try {
+      final results = await NmapEngine.scan(target: target, topPorts: 100);
 
-    final result = ScanResult(
-      target: target,
-      startedAt: started,
-      finishedAt: finished,
-      hosts: hosts,
-    );
-
-    lastResult = result;
-    return result;
-  }
-
-  /// Helper: some UI calls `ScanService().getRiskLevel(host)`.
-  RiskLevel getRiskLevel(DetectedHost host) {
-    return _calculateRiskLevel(host.openPorts);
-  }
-
-  // ---------------------------------------------------------------------------
-  // ARG BUILDERS
-  // ---------------------------------------------------------------------------
-
-  List<String> _buildSmartScanArgs(String target, ScanSettings settings) {
-    // Base options: service detection + faster timing.
-    final args = <String>[
-      '-sV',
-      '-T4',
-    ];
-
-    // ScanMode influences which ports & timing we use.
-    switch (settings.scanMode) {
-      case ScanMode.performance:
-        // Very fast – top 200 ports.
-        args.addAll(['--top-ports', '200']);
-        break;
-      case ScanMode.balanced:
-        // Default – top 1000 ports.
-        args.addAll(['--top-ports', '1000']);
-        break;
-      case ScanMode.paranoid:
-        // More thorough even for "Smart" – top 5000 ports.
-        args.addAll(['--top-ports', '5000', '-T3']);
-        break;
-    }
-
-    args.add(target);
-    return args;
-  }
-
-  List<String> _buildFullScanArgs(String target, ScanSettings settings) {
-    final args = <String>[
-      '-sV',
-      '-p',
-      '1-65535', // full port space
-    ];
-
-    // Tune timing/profile by ScanMode.
-    switch (settings.scanMode) {
-      case ScanMode.performance:
-        // Slightly more aggressive but still full.
-        args.add('-T4');
-        break;
-      case ScanMode.balanced:
-        args.add('-T3');
-        break;
-      case ScanMode.paranoid:
-        // Slower, more careful.
-        args.add('-T2');
-        break;
-    }
-
-    args.add(target);
-    return args;
-  }
-
-  // ---------------------------------------------------------------------------
-  // LOW-LEVEL NMAP INVOCATION
-  // ---------------------------------------------------------------------------
-
-  Future<String> _runNmap(List<String> args) async {
-    final result = await Process.run(
-      'nmap',
-      args,
-      runInShell: true,
-    );
-
-    if (result.exitCode != 0) {
-      final stderrStr = (result.stderr ?? '').toString();
-      throw Exception('nmap failed (exit ${result.exitCode}): $stderrStr');
-    }
-
-    return (result.stdout ?? '').toString();
-  }
-
-  // ---------------------------------------------------------------------------
-  // PARSING
-  // ---------------------------------------------------------------------------
-
-  final RegExp _hostRegex = RegExp(r'^Nmap scan report for (.+)$');
-  final RegExp _portLineRegex =
-      RegExp(r'^(\d+)/(tcp|udp)\s+open\s+([\w\-\?\.\+]+)');
-
-  List<DetectedHost> _parseNmapOutput(String stdoutStr) {
-    final lines = stdoutStr.split('\n');
-
-    final hosts = <DetectedHost>[];
-    String? currentAddress;
-    String? currentHostname;
-    final currentPorts = <OpenPort>[];
-
-    void flushCurrentHost() {
-      if (currentAddress == null) return;
-      final portsCopy = List<OpenPort>.from(currentPorts);
-      currentPorts.clear();
-
-      final risk = _calculateRiskLevel(portsCopy);
-
-      hosts.add(
-        DetectedHost(
-          address: currentAddress!,
-          hostname: currentHostname,
-          openPorts: portsCopy,
-          risk: risk,
-        ),
-      );
-
-      currentAddress = null;
-      currentHostname = null;
-    }
-
-    for (var rawLine in lines) {
-      final line = rawLine.trimRight();
-
-      // Start of a new host.
-      final hostMatch = _hostRegex.firstMatch(line);
-      if (hostMatch != null) {
-        // If we already had a host, flush it first.
-        flushCurrentHost();
-
-        final hostString = hostMatch.group(1) ?? '';
-
-        // hostString examples:
-        //  - 192.168.1.10
-        //  - mypc (192.168.1.20)
-        String address = hostString;
-        String? hostname;
-
-        final ipInParens = RegExp(r'(.+)\s+\(([^)]+)\)');
-        final ipMatch = ipInParens.firstMatch(hostString);
-        if (ipMatch != null) {
-          hostname = ipMatch.group(1)?.trim();
-          address = ipMatch.group(2)?.trim() ?? address;
-        }
-
-        currentAddress = address;
-        currentHostname = hostname;
-        continue;
-      }
-
-      // Port lines.
-      final portMatch = _portLineRegex.firstMatch(line);
-      if (portMatch != null && currentAddress != null) {
-        final port = int.tryParse(portMatch.group(1) ?? '') ?? 0;
-        final protocol = portMatch.group(2) ?? 'tcp';
-        final service = portMatch.group(3) ?? '?';
-
-        currentPorts.add(
-          OpenPort(
-            port: port,
-            protocol: protocol,
-            serviceName: service,
-          ),
+      final hosts = results.map((h) {
+        final ports = h.openPorts.map((p) => p.port).toSet().toList()..sort();
+        return DetectedHost(
+          ip: h.ip,
+          displayName: null, // optional (can enrich later)
+          openPorts: ports,
         );
-        continue;
-      }
+      }).toList()
+        ..sort((a, b) => a.ip.compareTo(b.ip));
+
+      detectedHostsNotifier.value = hosts;
+    } catch (e) {
+      lastError.value = e.toString();
+      // keep blank (do NOT inject fake devices)
+      detectedHostsNotifier.value = <DetectedHost>[];
+      rethrow;
+    } finally {
+      isScanning.value = false;
     }
-
-    // Flush last host if pending.
-    flushCurrentHost();
-
-    return hosts;
   }
 
-  // ---------------------------------------------------------------------------
-  // RISK LEVEL HEURISTICS
-  // ---------------------------------------------------------------------------
+  Future<void> runFullScan(String target) async {
+    if (isScanning.value) return;
+    isScanning.value = true;
+    lastError.value = null;
 
-  RiskLevel _calculateRiskLevel(List<OpenPort> ports) {
-    if (ports.isEmpty) {
-      return RiskLevel.low;
+    clearResults();
+
+    try {
+      // Full scan = more ports (still time bounded)
+      final results = await NmapEngine.scan(target: target, topPorts: 1000);
+
+      final hosts = results.map((h) {
+        final ports = h.openPorts.map((p) => p.port).toSet().toList()..sort();
+        return DetectedHost(
+          ip: h.ip,
+          displayName: null,
+          openPorts: ports,
+        );
+      }).toList()
+        ..sort((a, b) => a.ip.compareTo(b.ip));
+
+      detectedHostsNotifier.value = hosts;
+    } catch (e) {
+      lastError.value = e.toString();
+      detectedHostsNotifier.value = <DetectedHost>[];
+      rethrow;
+    } finally {
+      isScanning.value = false;
     }
-
-    bool hasHigh = false;
-    bool hasMedium = false;
-
-    for (final p in ports) {
-      final s = p.serviceName.toLowerCase();
-
-      // High-risk services: remote admin & file shares exposed.
-      if (p.port == 21 ||
-          p.port == 23 ||
-          p.port == 3389 ||
-          p.port == 445 ||
-          p.port == 1900 ||
-          s.contains('telnet') ||
-          s.contains('rdp') ||
-          s.contains('smb')) {
-        hasHigh = true;
-        break;
-      }
-
-      // Medium-risk: typical entry points.
-      if (p.port == 22 ||
-          p.port == 80 ||
-          p.port == 443 ||
-          p.port == 8080 ||
-          s.contains('http') ||
-          s.contains('ssh')) {
-        hasMedium = true;
-      }
-    }
-
-    if (hasHigh) return RiskLevel.high;
-    if (hasMedium) return RiskLevel.medium;
-    return RiskLevel.low;
   }
 }
+
+/// Global singleton
+final ScanService scanService = ScanService();
