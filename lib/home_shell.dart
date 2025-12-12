@@ -1,9 +1,10 @@
-ï»¿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:scanx_app/features/dashboard/dashboard_screen.dart';
 import 'package:scanx_app/features/scan/scan_screen.dart';
 import 'package:scanx_app/features/devices/devices_screen.dart';
 import 'package:scanx_app/features/settings/settings_screen.dart';
 
+/// Legacy shell (not the main entry) – kept compiling clean for future use.
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
 
@@ -14,16 +15,17 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> {
   int _currentIndex = 0;
 
-  // IMPORTANT: Not const. Keep as final.
-  final List<Widget> _screens = <Widget>[
-    DashboardScreen(),
+  static final List<Widget> _screens = <Widget>[
+    const DashboardScreen(),
     const ScanScreen(),
     DevicesScreen(),
     const SettingsScreen(),
   ];
 
   void _onItemTapped(int index) {
-    setState(() => _currentIndex = index);
+    setState(() {
+      _currentIndex = index;
+    });
   }
 
   @override
@@ -35,10 +37,22 @@ class _HomeShellState extends State<HomeShell> {
         onTap: _onItemTapped,
         type: BottomNavigationBarType.fixed,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: 'Dashboard'),
-          BottomNavigationBarItem(icon: Icon(Icons.bolt), label: 'Scan'),
-          BottomNavigationBarItem(icon: Icon(Icons.devices), label: 'Devices'),
-          BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Settings'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.dashboard),
+            label: 'Dashboard',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.bolt),
+            label: 'Scan',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.devices),
+            label: 'Devices',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings),
+            label: 'Settings',
+          ),
         ],
       ),
     );
