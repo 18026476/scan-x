@@ -11,11 +11,12 @@ class DevicesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final theme = Theme.of(context);
     final result = ScanService().lastResult;
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
@@ -25,7 +26,7 @@ class DevicesScreen extends StatelessWidget {
               Text(
                 'Devices',
                 style: theme.textTheme.headlineMedium?.copyWith(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -39,7 +40,6 @@ class DevicesScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 24),
-
               if (result == null)
                 Expanded(
                   child: Center(
@@ -61,7 +61,6 @@ class DevicesScreen extends StatelessWidget {
                         securityService: RouterIotSecurityService(),
                       ),
                       const SizedBox(height: 12),
-
                       Expanded(
                         child: ListView.builder(
                           itemCount: result.hosts.length,
@@ -83,10 +82,11 @@ class DevicesScreen extends StatelessWidget {
                               child: Container(
                                 margin: const EdgeInsets.only(bottom: 12),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF111111),
+                                  color: Theme.of(context).colorScheme.surface,
                                   borderRadius: BorderRadius.circular(16),
                                   border: Border.all(
-                                    color: const Color(0xFF222222),
+                                    color:
+                                        Theme.of(context).colorScheme.surface,
                                   ),
                                 ),
                                 padding: const EdgeInsets.symmetric(
@@ -104,7 +104,7 @@ class DevicesScreen extends StatelessWidget {
                                     Expanded(
                                       child: Column(
                                         crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Row(
                                             children: [
@@ -114,7 +114,9 @@ class DevicesScreen extends StatelessWidget {
                                                   style: theme
                                                       .textTheme.titleMedium
                                                       ?.copyWith(
-                                                    color: Colors.white,
+                                                    color: Theme.of(context)
+                                                        .colorScheme
+                                                        .onSurface,
                                                     fontWeight: FontWeight.bold,
                                                   ),
                                                 ),
@@ -127,7 +129,7 @@ class DevicesScreen extends StatelessWidget {
                                           Text(
                                             host.hostname == null
                                                 ? 'IP: ${host.ip}'
-                                                : 'IP: ${host.ip} • Hostname resolved',
+                                                : 'IP: ${host.ip} ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¢ Hostname resolved',
                                             style: theme.textTheme.bodySmall
                                                 ?.copyWith(
                                               color: Colors.grey[400],
@@ -138,8 +140,8 @@ class DevicesScreen extends StatelessWidget {
                                             openPorts.isEmpty
                                                 ? 'No open ports detected.'
                                                 : '${openPorts.length} open port(s): '
-                                                '${openPorts.take(3).map((p) => '${p.port}/${p.protocol}').join(', ')}'
-                                                '${openPorts.length > 3 ? '...' : ''}',
+                                                    '${openPorts.take(3).map((p) => '${p.port}/${p.protocol}').join(', ')}'
+                                                    '${openPorts.length > 3 ? '...' : ''}',
                                             style: theme.textTheme.bodySmall
                                                 ?.copyWith(
                                               color: Colors.grey[400],
