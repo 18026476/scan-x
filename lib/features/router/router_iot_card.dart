@@ -55,6 +55,8 @@ class RouterIotCard extends StatelessWidget {
     }
 
     return Card(
+      key: const Key('router_iot_card'),
+
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
