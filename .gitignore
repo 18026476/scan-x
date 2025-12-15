@@ -41,3 +41,8 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Local backups
+*.bak_*
+hardcoded_colors_report.txt
+
