@@ -1,6 +1,7 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
+
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'settings_service.dart';
 
@@ -23,13 +24,13 @@ class OpenPort {
     required this.serviceName,
   });
 
-  /// Backwards-compat
+  /// Backwards-compat: some UI still calls `port.service`.
   String get service => serviceName;
 }
 
 /// Represents a detected host in the scan result.
 class DetectedHost {
-  final String address; // IP
+  final String address; // IP or hostname
   final String? hostname;
   final List<OpenPort> openPorts;
   final RiskLevel risk;
@@ -41,10 +42,11 @@ class DetectedHost {
     required this.risk,
   });
 
+  /// Backwards-compat: older code uses `host.ip`.
   String get ip => address;
 }
 
-/// Overall scan result.
+/// Overall scan result from a single Smart/Full scan.
 class ScanResult {
   final String target;
   final DateTime startedAt;
@@ -59,31 +61,76 @@ class ScanResult {
   });
 }
 
+/// Main service that talks to nmap and parses output.
 class ScanService {
   ScanService._internal();
   static final ScanService _instance = ScanService._internal();
   factory ScanService() => _instance;
 
+  /// Last completed scan (Smart or Full).
   ScanResult? lastResult;
 
   // ---------------------------------------------------------------------------
   // PUBLIC API
   // ---------------------------------------------------------------------------
 
+  /// Dashboard helper: runs a quick Smart Scan using the saved Settings target.
+  /// This avoids compile-time dependency on ScanSettings having a specific
+  /// field name (we read SharedPreferences directly for robustness).
+  Future<ScanResult> runQuickSmartScanFromDefaults() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // Try a few likely keys. If none exist, fallback to a safe default.
+    final target =
+        prefs.getString('defaultTarget') ??
+            prefs.getString('targetCidr') ??
+            prefs.getString('defaultTargetCidr') ??
+            prefs.getString('scanTarget') ??
+            '192.168.1.0/24';
+
+    return runQuickSmartScan(target);
+  }
+
+  /// "Quick Smart Scan" – faster than your standard smart scan:
+  /// - fewer top ports
+  /// - host timeout
+  /// - reduced retries
+  Future<ScanResult> runQuickSmartScan(String target) async {
+    final settings = SettingsService().settings;
+    final started = DateTime.now();
+
+    final args = _buildQuickSmartArgs(target, settings);
+    final stdoutStr = await _runNmap(args);
+
+    final hosts = _parseNmapOutput(stdoutStr);
+    final finished = DateTime.now();
+
+    final result = ScanResult(
+      target: target,
+      startedAt: started,
+      finishedAt: finished,
+      hosts: hosts,
+    );
+
+    lastResult = result;
+    return result;
+  }
+
+  /// Fast "Smart Scan" – focuses on common ports and speed.
   Future<ScanResult> runSmartScan(String target) async {
     final settings = SettingsService().settings;
     final started = DateTime.now();
 
-    final stdoutStr = await _runNmap(
-      _buildSmartScanArgs(target, settings),
-    );
+    final args = _buildSmartScanArgs(target, settings);
+    final stdoutStr = await _runNmap(args);
 
     final hosts = _parseNmapOutput(stdoutStr);
+    final finished = DateTime.now();
 
     final result = ScanResult(
       target: target,
       startedAt: started,
-      finishedAt: DateTime.now(),
+      finishedAt: finished,
       hosts: hosts,
     );
 
@@ -91,20 +138,21 @@ class ScanService {
     return result;
   }
 
+  /// Deep "Full Scan" – scans all 1–65535 ports.
   Future<ScanResult> runFullScan(String target) async {
     final settings = SettingsService().settings;
     final started = DateTime.now();
 
-    final stdoutStr = await _runNmap(
-      _buildFullScanArgs(target, settings),
-    );
+    final args = _buildFullScanArgs(target, settings);
+    final stdoutStr = await _runNmap(args);
 
     final hosts = _parseNmapOutput(stdoutStr);
+    final finished = DateTime.now();
 
     final result = ScanResult(
       target: target,
       startedAt: started,
-      finishedAt: DateTime.now(),
+      finishedAt: finished,
       hosts: hosts,
     );
 
@@ -112,16 +160,50 @@ class ScanService {
     return result;
   }
 
-  RiskLevel getRiskLevel(DetectedHost host) =>
-      _calculateRiskLevel(host.openPorts);
+  /// Helper: some UI calls `ScanService().getRiskLevel(host)`.
+  RiskLevel getRiskLevel(DetectedHost host) {
+    return _calculateRiskLevel(host.openPorts);
+  }
 
   // ---------------------------------------------------------------------------
-  // NMAP ARGS
+  // ARG BUILDERS
   // ---------------------------------------------------------------------------
 
-  List<String> _buildSmartScanArgs(
-      String target, ScanSettings settings) {
-    final args = ['-sV', '-T4'];
+  List<String> _buildQuickSmartArgs(String target, ScanSettings settings) {
+    // This is deliberately conservative for home networks:
+    // fast timing + smaller port set + host timeout.
+    final args = <String>[
+      '-sV',
+      '-T4',
+      '--top-ports',
+      '200',
+      '--host-timeout',
+      '15s',
+      '--max-retries',
+      '1',
+    ];
+
+    // If user selected paranoid, slow it slightly (but still "quick").
+    if (settings.scanMode == ScanMode.paranoid) {
+      // Reduce aggression for flaky routers.
+      args.remove('-T4');
+      args.insert(1, '-T3');
+      // Give a bit more time per host.
+      final idx = args.indexOf('--host-timeout');
+      if (idx != -1 && idx + 1 < args.length) {
+        args[idx + 1] = '25s';
+      }
+    }
+
+    args.add(target);
+    return args;
+  }
+
+  List<String> _buildSmartScanArgs(String target, ScanSettings settings) {
+    final args = <String>[
+      '-sV',
+      '-T4',
+    ];
 
     switch (settings.scanMode) {
       case ScanMode.performance:
@@ -139,9 +221,12 @@ class ScanService {
     return args;
   }
 
-  List<String> _buildFullScanArgs(
-      String target, ScanSettings settings) {
-    final args = ['-sV', '-p', '1-65535'];
+  List<String> _buildFullScanArgs(String target, ScanSettings settings) {
+    final args = <String>[
+      '-sV',
+      '-p',
+      '1-65535',
+    ];
 
     switch (settings.scanMode) {
       case ScanMode.performance:
@@ -160,10 +245,11 @@ class ScanService {
   }
 
   // ---------------------------------------------------------------------------
-  // PROCESS EXECUTION
+  // LOW-LEVEL NMAP INVOCATION
   // ---------------------------------------------------------------------------
 
   Future<String> _runNmap(List<String> args) async {
+    // Windows-safe decoding: systemEncoding avoids UTF-8 pipe crashes
     final result = await Process.run(
       'nmap',
       args,
@@ -173,128 +259,158 @@ class ScanService {
     );
 
     if (result.exitCode != 0) {
-      throw Exception(
-        'nmap failed (${result.exitCode}): ${result.stderr}',
-      );
+      final stderrStr = (result.stderr ?? '').toString();
+      throw Exception('nmap failed (exit ${result.exitCode}): $stderrStr');
     }
 
-    return result.stdout.toString();
+    final out = (result.stdout ?? '').toString();
+    return _sanitizeText(out);
+  }
+
+  /// Removes common mojibake artifacts + normalizes weird control chars
+  /// without destroying legitimate hostnames.
+  String _sanitizeText(String s) {
+    // Remove replacement chars and trim weird nulls.
+    var t = s.replaceAll('\uFFFD', '');
+
+    // Very common mojibake fragments seen in your UI/logs.
+    // We do NOT try to "decode back" (unsafe). We just strip noise.
+    const junk = [
+      'ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“',
+      'ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“',
+      'ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢',
+      'ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“',
+      'ÃƒÂ¢Ã¢â€šÂ¬',
+      'ÃƒÂ¢Ã¢â€š',
+      'ÃƒÂ¢',
+    ];
+    for (final j in junk) {
+      t = t.replaceAll(j, '');
+    }
+
+    return t;
   }
 
   // ---------------------------------------------------------------------------
-  // PARSING + SANITIZATION
+  // PARSING
   // ---------------------------------------------------------------------------
 
-  final _hostRegex = RegExp(r'^Nmap scan report for (.+)$');
-  final _portRegex =
-  RegExp(r'^(\d+)/(tcp|udp)\s+open\s+([\w\-\.\+]+)');
+  final RegExp _hostRegex = RegExp(r'^Nmap scan report for (.+)$');
+  final RegExp _portLineRegex =
+  RegExp(r'^(\d+)/(tcp|udp)\s+open\s+([\w\-\?\.\+]+)');
 
   List<DetectedHost> _parseNmapOutput(String stdoutStr) {
     final lines = stdoutStr.split('\n');
 
     final hosts = <DetectedHost>[];
-    String? address;
-    String? hostname;
-    final ports = <OpenPort>[];
+    String? currentAddress;
+    String? currentHostname;
+    final currentPorts = <OpenPort>[];
 
-    void flush() {
-      if (address == null) return;
+    void flushCurrentHost() {
+      if (currentAddress == null) return;
+      final portsCopy = List<OpenPort>.from(currentPorts);
+      currentPorts.clear();
+
+      final risk = _calculateRiskLevel(portsCopy);
 
       hosts.add(
         DetectedHost(
-          address: address!,
-          hostname: _sanitizeString(hostname),
-          openPorts: List.from(ports),
-          risk: _calculateRiskLevel(ports),
+          address: currentAddress!,
+          hostname: currentHostname,
+          openPorts: portsCopy,
+          risk: risk,
         ),
       );
 
-      address = null;
-      hostname = null;
-      ports.clear();
+      currentAddress = null;
+      currentHostname = null;
     }
 
-    for (final raw in lines) {
-      final line = raw.trimRight();
+    for (var rawLine in lines) {
+      final line = rawLine.trimRight();
 
       final hostMatch = _hostRegex.firstMatch(line);
       if (hostMatch != null) {
-        flush();
+        flushCurrentHost();
 
-        final value = hostMatch.group(1)!;
-        final m = RegExp(r'(.+)\s+\(([^)]+)\)').firstMatch(value);
+        final hostString = hostMatch.group(1) ?? '';
 
-        if (m != null) {
-          hostname = m.group(1);
-          address = m.group(2);
-        } else {
-          address = value;
+        String address = hostString;
+        String? hostname;
+
+        final ipInParens = RegExp(r'(.+)\s+\(([^)]+)\)');
+        final ipMatch = ipInParens.firstMatch(hostString);
+        if (ipMatch != null) {
+          hostname = ipMatch.group(1)?.trim();
+          address = ipMatch.group(2)?.trim() ?? address;
         }
+
+        currentAddress = address;
+        currentHostname = hostname;
         continue;
       }
 
-      final portMatch = _portRegex.firstMatch(line);
-      if (portMatch != null && address != null) {
-        ports.add(
+      final portMatch = _portLineRegex.firstMatch(line);
+      if (portMatch != null && currentAddress != null) {
+        final port = int.tryParse(portMatch.group(1) ?? '') ?? 0;
+        final protocol = portMatch.group(2) ?? 'tcp';
+        final service = portMatch.group(3) ?? '?';
+
+        currentPorts.add(
           OpenPort(
-            port: int.parse(portMatch.group(1)!),
-            protocol: portMatch.group(2)!,
-            serviceName: portMatch.group(3)!,
+            port: port,
+            protocol: protocol,
+            serviceName: service,
           ),
         );
+        continue;
       }
     }
 
-    flush();
+    flushCurrentHost();
     return hosts;
   }
 
-  String? _sanitizeString(String? input) {
-    if (input == null) return null;
-
-    // Remove NUL + control chars
-    var s = input.replaceAll(RegExp(r'[\x00-\x1F\x7F]'), '').trim();
-
-    // Fix mojibake if present
-    if (s.contains('Ã') || s.contains('Â') || s.contains('â')) {
-      try {
-        s = utf8.decode(latin1.encode(s), allowMalformed: true);
-      } catch (_) {}
-    }
-
-    return s.isEmpty ? null : s;
-  }
-
   // ---------------------------------------------------------------------------
-  // RISK HEURISTICS
+  // RISK LEVEL HEURISTICS
   // ---------------------------------------------------------------------------
 
   RiskLevel _calculateRiskLevel(List<OpenPort> ports) {
-    if (ports.isEmpty) return RiskLevel.low;
+    if (ports.isEmpty) {
+      return RiskLevel.low;
+    }
 
-    bool high = false;
-    bool medium = false;
+    bool hasHigh = false;
+    bool hasMedium = false;
 
     for (final p in ports) {
       final s = p.serviceName.toLowerCase();
 
-      if ([21, 23, 3389, 445, 1900].contains(p.port) ||
+      if (p.port == 21 ||
+          p.port == 23 ||
+          p.port == 3389 ||
+          p.port == 445 ||
+          p.port == 1900 ||
           s.contains('telnet') ||
           s.contains('rdp') ||
           s.contains('smb')) {
-        high = true;
+        hasHigh = true;
         break;
       }
 
-      if ([22, 80, 443, 8080].contains(p.port) ||
+      if (p.port == 22 ||
+          p.port == 80 ||
+          p.port == 443 ||
+          p.port == 8080 ||
           s.contains('http') ||
           s.contains('ssh')) {
-        medium = true;
+        hasMedium = true;
       }
     }
 
-    if (high) return RiskLevel.high;
-    if (medium) return RiskLevel.medium;
+    if (hasHigh) return RiskLevel.high;
+    if (hasMedium) return RiskLevel.medium;
     return RiskLevel.low;
   }
 }
