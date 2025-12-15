@@ -1,0 +1,298 @@
+import 'package:scanx_app/features/router/router_iot_card.dart';
+import 'package:scanx_app/features/router/router_iot_security.dart';
+
+import 'package:flutter/material.dart';
+import 'package:scanx_app/core/services/scan_service.dart';
+import 'package:scanx_app/core/services/settings_service.dart';
+
+class DashboardScreen extends StatefulWidget {
+  const DashboardScreen({super.key});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  final ScanService _scanService = ScanService();
+  final SettingsService _settingsService = SettingsService();
+
+  bool _isQuickScanning = false;
+
+  Future<void> _runQuickScan() async {
+    if (_isQuickScanning) return;
+
+    setState(() {
+      _isQuickScanning = true;
+    });
+
+    final target = _settingsService.settings.defaultTargetCidr;
+
+    try {
+      await _scanService.runSmartScan(target);
+      if (!mounted) return;
+
+      setState(() {
+        _isQuickScanning = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Quick Smart Scan finished for $target')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _isQuickScanning = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Quick Smart Scan failed: $e')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final result = _scanService.lastResult;
+
+    int devices = 0;
+    int high = 0;
+    int medium = 0;
+    int low = 0;
+    double healthScore = 0;
+
+    if (result != null) {
+      devices = result.hosts.length;
+
+      for (final host in result.hosts) {
+        switch (host.risk) {
+          case RiskLevel.high:
+            high++;
+            break;
+          case RiskLevel.medium:
+            medium++;
+            break;
+          case RiskLevel.low:
+            low++;
+            break;
+        }
+      }
+
+      healthScore = (100 - (high * 35 + medium * 15)).clamp(0, 100).toDouble();
+    }
+
+    final hasScan = result != null;
+
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'SCAN-X Dashboard',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 24),
+              _buildHealthCard(
+                theme: theme,
+                hasScan: hasScan,
+                healthScore: healthScore,
+                devices: devices,
+                high: high,
+                medium: medium,
+                low: low,
+              ),
+              const SizedBox(height: 16),
+              _buildQuickActionsCard(theme),
+              const SizedBox(height: 16),
+              _buildLastScanCard(theme, result),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHealthCard({
+    required ThemeData theme,
+    required bool hasScan,
+    required double healthScore,
+    required int devices,
+    required int high,
+    required int medium,
+    required int low,
+  }) {
+    final label = hasScan ? '${healthScore.toStringAsFixed(0)}%' : 'No data';
+    final barValue = hasScan ? healthScore / 100 : 0.0;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF111111),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF222222)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.shield, color: Color(0xFF1ECB7B)),
+              const SizedBox(width: 8),
+              Text(
+                'Network health',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                label,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              minHeight: 10,
+              value: barValue,
+              backgroundColor: const Color(0xFF222222),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                hasScan ? const Color(0xFF1ECB7B) : Colors.grey,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            hasScan
+                ? 'Devices: $devices � High: $high � Medium: $medium � Low: $low'
+                : 'No scans yet. Run a Quick Smart Scan to get your first health score.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: Colors.grey[400],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickActionsCard(ThemeData theme) {
+    final cidr = _settingsService.settings.defaultTargetCidr;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF111111),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF222222)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Quick actions',
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1ECB7B),
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+              onPressed: _isQuickScanning ? null : _runQuickScan,
+              icon: _isQuickScanning
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(Colors.black),
+                      ),
+                    )
+                  : const Icon(Icons.bolt),
+              label: Text(
+                _isQuickScanning ? 'Scanning�' : 'Quick Smart Scan',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Uses your default target from Settings (e.g. $cidr). '
+            'You can inspect details in the Scan and Devices tabs.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: Colors.grey[400],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLastScanCard(ThemeData theme, ScanResult? result) {
+    return Expanded(
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: const Color(0xFF111111),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFF222222)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Last scan summary',
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            if (result == null)
+              Text(
+                'No scans yet. Use Quick Smart Scan or go to the Scan tab to start.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: Colors.grey[400],
+                ),
+              )
+            else
+              Text(
+                'Target: ${result.target}\n'
+                'Devices found: ${result.hosts.length}\n'
+                'Started: ${result.startedAt}\n'
+                'Finished: ${result.finishedAt}',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: Colors.grey[400],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}

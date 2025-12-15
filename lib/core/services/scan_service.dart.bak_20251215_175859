@@ -1,7 +1,9 @@
-﻿import 'dart:async';
+import 'dart:convert';
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'dart:convert';
 import 'settings_service.dart';
 
 /// Basic risk level used across the app.
@@ -73,18 +75,7 @@ class ScanService {
   // PUBLIC API
   // ---------------------------------------------------------------------------
 
-  /// Dashboard helper: start a Smart Scan using a safe default.
-  ///
-  /// NOTE:
-  /// - We intentionally do NOT reference a non-existent `settings.defaultTarget`.
-  /// - If you later confirm your real setting field (e.g. `settings.targetCidr`),
-  ///   we can wire it here.
-  Future<void> runQuickSmartScanFromDefaults() async {
-    final fallback = lastResult?.target ?? '192.168.1.0/24';
-    await runSmartScan(fallback);
-  }
-
-  /// Fast "Smart Scan" - focuses on common ports and speed.
+  /// Fast "Smart Scan" Ã¢â‚¬â€œ focuses on common ports and speed.
   Future<ScanResult> runSmartScan(String target) async {
     final settings = SettingsService().settings;
     final started = DateTime.now();
@@ -106,7 +97,7 @@ class ScanService {
     return result;
   }
 
-  /// Deep "Full Scan" - scans all 1-65535 ports.
+  /// Deep "Full Scan" Ã¢â‚¬â€œ scans all 1Ã¢â‚¬â€œ65535 ports.
   Future<ScanResult> runFullScan(String target) async {
     final settings = SettingsService().settings;
     final started = DateTime.now();
@@ -147,15 +138,15 @@ class ScanService {
     // ScanMode influences which ports & timing we use.
     switch (settings.scanMode) {
       case ScanMode.performance:
-      // Very fast - top 200 ports.
+        // Very fast Ã¢â‚¬â€œ top 200 ports.
         args.addAll(['--top-ports', '200']);
         break;
       case ScanMode.balanced:
-      // Default - top 1000 ports.
+        // Default Ã¢â‚¬â€œ top 1000 ports.
         args.addAll(['--top-ports', '1000']);
         break;
       case ScanMode.paranoid:
-      // More thorough even for "Smart" - top 5000 ports.
+        // More thorough even for "Smart" Ã¢â‚¬â€œ top 5000 ports.
         args.addAll(['--top-ports', '5000', '-T3']);
         break;
     }
@@ -174,12 +165,14 @@ class ScanService {
     // Tune timing/profile by ScanMode.
     switch (settings.scanMode) {
       case ScanMode.performance:
+        // Slightly more aggressive but still full.
         args.add('-T4');
         break;
       case ScanMode.balanced:
         args.add('-T3');
         break;
       case ScanMode.paranoid:
+        // Slower, more careful.
         args.add('-T2');
         break;
     }
@@ -193,13 +186,10 @@ class ScanService {
   // ---------------------------------------------------------------------------
 
   Future<String> _runNmap(List<String> args) async {
-    final result = await Process.run(
-      'nmap',
-      args,
-      runInShell: true,
-      stdoutEncoding: systemEncoding,
-      stderrEncoding: systemEncoding,
-    );
+    final result = await Process.run('nmap', args,
+        runInShell: true,
+        stdoutEncoding: systemEncoding,
+        stderrEncoding: systemEncoding);
 
     if (result.exitCode != 0) {
       final stderrStr = (result.stderr ?? '').toString();
@@ -215,7 +205,7 @@ class ScanService {
 
   final RegExp _hostRegex = RegExp(r'^Nmap scan report for (.+)$');
   final RegExp _portLineRegex =
-  RegExp(r'^(\d+)/(tcp|udp)\s+open\s+([\w\-\?\.\+]+)');
+      RegExp(r'^(\d+)/(tcp|udp)\s+open\s+([\w\-\?\.\+]+)');
 
   List<DetectedHost> _parseNmapOutput(String stdoutStr) {
     final lines = stdoutStr.split('\n');
@@ -251,6 +241,7 @@ class ScanService {
       // Start of a new host.
       final hostMatch = _hostRegex.firstMatch(line);
       if (hostMatch != null) {
+        // If we already had a host, flush it first.
         flushCurrentHost();
 
         final hostString = hostMatch.group(1) ?? '';
@@ -287,10 +278,13 @@ class ScanService {
             serviceName: service,
           ),
         );
+        continue;
       }
     }
 
+    // Flush last host if pending.
     flushCurrentHost();
+
     return hosts;
   }
 
@@ -299,7 +293,9 @@ class ScanService {
   // ---------------------------------------------------------------------------
 
   RiskLevel _calculateRiskLevel(List<OpenPort> ports) {
-    if (ports.isEmpty) return RiskLevel.low;
+    if (ports.isEmpty) {
+      return RiskLevel.low;
+    }
 
     bool hasHigh = false;
     bool hasMedium = false;
