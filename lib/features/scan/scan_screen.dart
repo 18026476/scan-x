@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -148,12 +148,9 @@ class _ScanScreenState extends State<ScanScreen> {
     final result = _lastResult;
     final hosts = result?.hosts ?? [];
 
-    final highRisk =
-        hosts.where((h) => h.risk == RiskLevel.high).length;
-    final mediumRisk =
-        hosts.where((h) => h.risk == RiskLevel.medium).length;
-    final lowRisk =
-        hosts.where((h) => h.risk == RiskLevel.low).length;
+    final highRisk = hosts.where((h) => h.risk == RiskLevel.high).length;
+    final mediumRisk = hosts.where((h) => h.risk == RiskLevel.medium).length;
+    final lowRisk = hosts.where((h) => h.risk == RiskLevel.low).length;
 
     return Scaffold(
       appBar: AppBar(
@@ -388,7 +385,7 @@ class _GaugePainter extends CustomPainter {
     final sweepAngle = _degToRad(180);
 
     final basePaint = Paint()
-      ..color = const Color(0xFF222831)
+      ..color = const Color(0xFF111827)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 14
       ..strokeCap = StrokeCap.round;
@@ -466,7 +463,7 @@ class _GaugePainter extends CustomPainter {
       textPainter.text = TextSpan(
         text: label,
         style: const TextStyle(
-          color: Colors.white70,
+          color: Colors.black87,
           fontSize: 11,
         ),
       );
@@ -508,7 +505,7 @@ class _GaugePainter extends CustomPainter {
     }
 
     final knobPaint = Paint()
-      ..color = Colors.black
+      ..color = const Color(0xFF111827)
       ..style = PaintingStyle.fill;
     canvas.drawCircle(center, 9, knobPaint);
 
