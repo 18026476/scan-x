@@ -211,12 +211,12 @@ class _ScanScreenState extends State<ScanScreen> {
                             onPressed: _isScanning ? null : _runSmartScan,
                             icon: _isScanning
                                 ? const SizedBox(
-                                    width: 16,
-                                    height: 16,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  )
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                              ),
+                            )
                                 : const Icon(Icons.bolt),
                             label: Text(
                               _isScanning ? 'Scanning…' : 'Smart Scan',
@@ -351,6 +351,19 @@ class _ScanGauge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final brightness = Theme.of(context).brightness;
+    final isDark = brightness == Brightness.dark;
+
+    // Key fix: force readable contrast on labels/ticks in dark theme.
+    final labelColor =
+    isDark ? Colors.white.withOpacity(0.78) : Colors.black.withOpacity(0.78);
+
+    final minorTickColor =
+    isDark ? Colors.white.withOpacity(0.42) : Colors.black.withOpacity(0.25);
+
+    final majorTickColor =
+    isDark ? Colors.white.withOpacity(0.62) : Colors.black.withOpacity(0.45);
+
     return LayoutBuilder(
       builder: (_, constraints) {
         return CustomPaint(
@@ -358,6 +371,9 @@ class _ScanGauge extends StatelessWidget {
           painter: _GaugePainter(
             value: value,
             isActive: isActive,
+            labelColor: labelColor,
+            minorTickColor: minorTickColor,
+            majorTickColor: majorTickColor,
           ),
         );
       },
@@ -369,9 +385,17 @@ class _GaugePainter extends CustomPainter {
   final double value; // 0.0–1.0
   final bool isActive;
 
+  // Theme-safe colors (passed from widget, so we don't need BuildContext here)
+  final Color labelColor;
+  final Color minorTickColor;
+  final Color majorTickColor;
+
   _GaugePainter({
     required this.value,
     required this.isActive,
+    required this.labelColor,
+    required this.minorTickColor,
+    required this.majorTickColor,
   });
 
   double _degToRad(double deg) => deg * math.pi / 180.0;
@@ -416,12 +440,12 @@ class _GaugePainter extends CustomPainter {
     );
 
     final tickPaint = Paint()
-      ..color = Colors.grey.shade600
+      ..color = minorTickColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
 
     final majorTickPaint = Paint()
-      ..color = Colors.grey.shade300
+      ..color = majorTickColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3;
 
@@ -462,9 +486,11 @@ class _GaugePainter extends CustomPainter {
 
       textPainter.text = TextSpan(
         text: label,
-        style: const TextStyle(
-          color: Colors.black87,
+        style: TextStyle(
+          // Key fix: do NOT hardcode black labels on dark themes.
+          color: labelColor,
           fontSize: 11,
+          fontWeight: FontWeight.w500,
         ),
       );
       textPainter.layout();
@@ -518,6 +544,10 @@ class _GaugePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _GaugePainter oldDelegate) {
-    return oldDelegate.value != value || oldDelegate.isActive != isActive;
+    return oldDelegate.value != value ||
+        oldDelegate.isActive != isActive ||
+        oldDelegate.labelColor != labelColor ||
+        oldDelegate.minorTickColor != minorTickColor ||
+        oldDelegate.majorTickColor != majorTickColor;
   }
 }

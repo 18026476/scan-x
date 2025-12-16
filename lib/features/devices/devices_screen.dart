@@ -11,37 +11,44 @@ class DevicesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final theme = Theme.of(context);
     final result = ScanService().lastResult;
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 'Devices',
                 style: theme.textTheme.headlineMedium?.copyWith(
+                  color: cs.onSurface,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
                 result == null
-                    ? 'Run a Smart or Full Scan to discover devices.'
+                    ? 'Run a Smart or Full Scan to discover devices on your network.'
                     : 'Showing devices from the last scan.',
-                style: theme.textTheme.bodyMedium,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: cs.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: 24),
               if (result == null)
-                const Expanded(
+                Expanded(
                   child: Center(
                     child: Text(
-                      'No scan results.\nGo to Scan and run a scan.',
+                      'No scan results.\nGo to the Scan tab and run a scan.',
                       textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: cs.onSurfaceVariant,
+                      ),
                     ),
                   ),
                 )
@@ -59,76 +66,81 @@ class DevicesScreen extends StatelessWidget {
                           itemCount: result.hosts.length,
                           itemBuilder: (context, index) {
                             final host = result.hosts[index];
+                            final openPorts = host.openPorts;
+                            final risk = host.risk;
+
+                            final title = host.hostname ?? host.ip;
+
+                            final subtitle = host.hostname == null
+                                ? 'IP: ${host.ip}'
+                                : 'IP: ${host.ip} - Hostname resolved';
 
                             return InkWell(
                               onTap: () {
-                                Navigator.push(
-                                  context,
+                                Navigator.of(context).push(
                                   MaterialPageRoute(
-                                    builder: (_) =>
-                                        DeviceDetailsScreen(host: host),
+                                    builder: (_) => DeviceDetailsScreen(host: host),
                                   ),
                                 );
                               },
                               borderRadius: BorderRadius.circular(16),
                               child: Container(
-                                margin:
-                                const EdgeInsets.only(bottom: 12),
-                                padding: const EdgeInsets.all(16),
+                                margin: const EdgeInsets.only(bottom: 12),
                                 decoration: BoxDecoration(
-                                  color:
-                                  theme.colorScheme.surface,
-                                  borderRadius:
-                                  BorderRadius.circular(16),
+                                  color: cs.surface,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: cs.outlineVariant.withOpacity(0.6),
+                                  ),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 14,
                                 ),
                                 child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Icon(
+                                    Icon(
                                       Icons.devices_other,
-                                      color: Color(0xFF1ECB7B),
+                                      color: cs.primary,
                                     ),
                                     const SizedBox(width: 12),
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                                        crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           Row(
                                             children: [
                                               Expanded(
                                                 child: Text(
-                                                  host.hostname ??
-                                                      host.ip,
-                                                  style: theme
-                                                      .textTheme
-                                                      .titleMedium
-                                                      ?.copyWith(
-                                                    fontWeight:
-                                                    FontWeight
-                                                        .bold,
+                                                  title,
+                                                  style: theme.textTheme.titleMedium?.copyWith(
+                                                    color: cs.onSurface,
+                                                    fontWeight: FontWeight.bold,
                                                   ),
                                                 ),
                                               ),
-                                              _buildRiskChip(
-                                                  host.risk),
+                                              const SizedBox(width: 8),
+                                              _buildRiskChip(context, risk),
                                             ],
                                           ),
                                           const SizedBox(height: 4),
                                           Text(
-                                            'IP: ${host.ip}'
-                                                '${host.hostname != null ? ' · Hostname resolved' : ''}',
-                                            style: theme
-                                                .textTheme.bodySmall,
+                                            subtitle,
+                                            style: theme.textTheme.bodySmall?.copyWith(
+                                              color: cs.onSurfaceVariant,
+                                            ),
                                           ),
                                           const SizedBox(height: 8),
                                           Text(
-                                            host.openPorts.isEmpty
+                                            openPorts.isEmpty
                                                 ? 'No open ports detected.'
-                                                : '${host.openPorts.length} open port(s): '
-                                                '${host.openPorts.take(3).map((p) => '${p.port}/${p.protocol}').join(', ')}'
-                                                '${host.openPorts.length > 3 ? '…' : ''}',
-                                            style: theme
-                                                .textTheme.bodySmall,
+                                                : '${openPorts.length} open port(s): '
+                                                '${openPorts.take(3).map((p) => '${p.port}/${p.protocol}').join(', ')}'
+                                                '${openPorts.length > 3 ? '...' : ''}',
+                                            style: theme.textTheme.bodySmall?.copyWith(
+                                              color: cs.onSurfaceVariant,
+                                            ),
                                           ),
                                         ],
                                       ),
@@ -150,23 +162,25 @@ class DevicesScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildRiskChip(RiskLevel risk) {
-    final color = _riskColor(risk);
+  Widget _buildRiskChip(BuildContext context, RiskLevel risk) {
+    final cs = Theme.of(context).colorScheme;
+    final label = _riskLabel(risk);
+    final fg = _riskColor(risk);
+    final bg = fg.withOpacity(0.12);
 
     return Container(
-      padding:
-      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: bg,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color),
+        border: Border.all(color: fg.withOpacity(0.5)),
       ),
       child: Text(
-        _riskLabel(risk),
+        label,
         style: TextStyle(
           fontSize: 11,
+          color: fg,
           fontWeight: FontWeight.w600,
-          color: color,
         ),
       ),
     );
@@ -179,6 +193,7 @@ class DevicesScreen extends StatelessWidget {
       case RiskLevel.medium:
         return 'Medium risk';
       case RiskLevel.low:
+      default:
         return 'Low risk';
     }
   }
@@ -190,6 +205,7 @@ class DevicesScreen extends StatelessWidget {
       case RiskLevel.medium:
         return const Color(0xFFFFC107);
       case RiskLevel.low:
+      default:
         return const Color(0xFF1ECB7B);
     }
   }

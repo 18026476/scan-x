@@ -14,19 +14,21 @@ class ScanXApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final settings = SettingsService.instance;
+    final settings = SettingsService();
 
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: settings.themeModeListenable,
       builder: (context, mode, _) {
-        final isScanXDark = (settings.appThemeIndex == 3);
+        final isScanXDark = settings.appThemeIndex == 3;
 
         return MaterialApp(
           title: 'SCAN-X',
           debugShowCheckedModeBanner: false,
+
           themeMode: mode,
           theme: _buildLightTheme(),
           darkTheme: isScanXDark ? _buildScanXDarkTheme() : _buildDarkTheme(),
+
           home: const MainNavigation(),
         );
       },
@@ -34,13 +36,16 @@ class ScanXApp extends StatelessWidget {
   }
 }
 
-/* keep your theme builders here (unchanged if already working) */
 ThemeData _buildLightTheme() {
   const primary = Color(0xFF1ECB7B);
+
   final base = ThemeData(
     useMaterial3: true,
     brightness: Brightness.light,
-    colorScheme: ColorScheme.fromSeed(seedColor: primary, brightness: Brightness.light),
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: primary,
+      brightness: Brightness.light,
+    ),
   );
 
   return base.copyWith(
@@ -50,17 +55,24 @@ ThemeData _buildLightTheme() {
       foregroundColor: Colors.black,
       elevation: 0,
       centerTitle: false,
-      titleTextStyle: const TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.w700),
+      titleTextStyle: const TextStyle(
+        color: Colors.black,
+        fontSize: 18,
+        fontWeight: FontWeight.w700,
+      ),
     ),
     cardTheme: const CardThemeData(
       color: Colors.white,
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.all(Radius.circular(18)),
-        side: BorderSide(color: Color(0x1A000000)),
+        side: BorderSide(color: Color(0x1A000000)), // ~10% black
       ),
     ),
-    dividerTheme: const DividerThemeData(color: Color(0x14000000), thickness: 1),
+    dividerTheme: const DividerThemeData(
+      color: Color(0x14000000),
+      thickness: 1,
+    ),
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
       backgroundColor: Color(0xFFF7F8FA),
       selectedItemColor: primary,
@@ -75,10 +87,14 @@ ThemeData _buildLightTheme() {
 
 ThemeData _buildDarkTheme() {
   const primary = Color(0xFF1ECB7B);
+
   final base = ThemeData(
     useMaterial3: true,
     brightness: Brightness.dark,
-    colorScheme: ColorScheme.fromSeed(seedColor: primary, brightness: Brightness.dark),
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: primary,
+      brightness: Brightness.dark,
+    ),
   );
 
   return base.copyWith(

@@ -11,7 +11,6 @@ class DeviceDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     final theme = Theme.of(context);
     final ports = host.openPorts;
 
@@ -24,7 +23,7 @@ class DeviceDetailsScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildHeader(theme),
+            _buildHeader(context),
             const SizedBox(height: 16),
             Text(
               'Open ports',
@@ -56,13 +55,16 @@ class DeviceDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(ThemeData theme) {
+  Widget _buildHeader(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF111318),
+        color: cs.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF22252F)),
+        border: Border.all(color: cs.outlineVariant.withOpacity(0.6)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -72,23 +74,28 @@ class DeviceDetailsScreen extends StatelessWidget {
               Expanded(
                 child: Text(
                   host.hostname ?? host.ip,
-                  style: theme.textTheme.titleMedium,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: cs.onSurface,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
-              _buildRiskChip(host.risk),
+              _buildRiskChip(context, host.risk),
             ],
           ),
           const SizedBox(height: 8),
           Text(
             'IP: ${host.ip}',
-            style: theme.textTheme.bodySmall,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: cs.onSurfaceVariant,
+            ),
           ),
           if (host.hostname != null) ...[
             const SizedBox(height: 4),
             Text(
               'Hostname resolved',
               style: theme.textTheme.bodySmall?.copyWith(
-                color: Colors.white60,
+                color: cs.onSurfaceVariant,
               ),
             ),
           ],
@@ -97,7 +104,7 @@ class DeviceDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildRiskChip(RiskLevel risk) {
+  Widget _buildRiskChip(BuildContext context, RiskLevel risk) {
     final label = _riskLabel(risk);
     final color = _riskColor(risk);
 
@@ -133,11 +140,11 @@ class DeviceDetailsScreen extends StatelessWidget {
   Color _riskColor(RiskLevel risk) {
     switch (risk) {
       case RiskLevel.high:
-        return const Color(0xFFFF5252); // red
+        return const Color(0xFFFF5252);
       case RiskLevel.medium:
-        return const Color(0xFFFFC107); // amber
+        return const Color(0xFFFFC107);
       case RiskLevel.low:
-        return const Color(0xFF1ECB7B); // green
+        return const Color(0xFF1ECB7B);
     }
   }
 }
