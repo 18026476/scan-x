@@ -1,67 +1,96 @@
 import 'package:flutter/material.dart';
 
-/// Central SCAN-X theme configuration.
 class AppTheme {
   AppTheme._();
 
-  // Brand accent colour
-  static const Color _seedColor = Color(0xFF1ECB7B);
+  static const Color primary = Color(0xFF1ECB7B);
 
-  // Dark and light color schemes whose brightness matches their use
-  static final ColorScheme _darkScheme = ColorScheme.fromSeed(
-    seedColor: _seedColor,
-    brightness: Brightness.dark,
-  );
-
-  static final ColorScheme _lightScheme = ColorScheme.fromSeed(
-    seedColor: _seedColor,
-    brightness: Brightness.light,
-  );
-
-  /// Main dark theme for the app.
-  static ThemeData get darkTheme => ThemeData(
-    useMaterial3: true,
-    colorScheme: _darkScheme,
-    // Do NOT set brightness separately – it comes from the colorScheme.
-    scaffoldBackgroundColor: const Color(0xFF050608),
-    canvasColor: const Color(0xFF050608),
-    cardColor: const Color(0xFF111111),
-    appBarTheme: AppBarTheme(
-      backgroundColor: const Color(0xFF050608),
-      foregroundColor: _darkScheme.onSurface,
-      elevation: 0,
-      centerTitle: true,
-    ),
-    snackBarTheme: SnackBarThemeData(
-      backgroundColor: const Color(0xFF111111),
-      contentTextStyle: const TextStyle(color: Colors.white),
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+  static ThemeData light() {
+    final base = ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: primary,
+        brightness: Brightness.light,
       ),
-    ),
-    bottomNavigationBarTheme: BottomNavigationBarThemeData(
-      backgroundColor: const Color(0xFF050608),
-      selectedItemColor: _seedColor,
-      unselectedItemColor: Colors.grey[500],
-      showUnselectedLabels: true,
-      type: BottomNavigationBarType.fixed,
-    ),
-  );
+    );
 
-  /// Optional light theme (if you ever want system / light mode).
-  static ThemeData get lightTheme => ThemeData(
-    useMaterial3: true,
-    colorScheme: _lightScheme,
-    scaffoldBackgroundColor: Colors.grey[50],
-    appBarTheme: AppBarTheme(
-      backgroundColor: Colors.grey[50],
-      foregroundColor: _lightScheme.onSurface,
-      elevation: 0,
-      centerTitle: true,
-    ),
-  );
+    return base.copyWith(
+      scaffoldBackgroundColor: const Color(0xFFF7F8FA),
+      appBarTheme: base.appBarTheme.copyWith(
+        backgroundColor: const Color(0xFFF7F8FA),
+        foregroundColor: const Color(0xFF121417),
+        elevation: 0,
+        centerTitle: false,
+        titleTextStyle: const TextStyle(
+          color: Color(0xFF121417),
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+      cardTheme: const CardThemeData(
+        color: Colors.white,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(18)),
+          side: BorderSide(color: Color(0x1A000000)), // 10% black
+        ),
+      ),
+      dividerTheme: const DividerThemeData(
+        color: Color(0x14000000),
+        thickness: 1,
+      ),
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: Color(0xFFF7F8FA),
+        selectedItemColor: primary,
+        unselectedItemColor: Colors.black54,
+      ),
+      textTheme: base.textTheme.apply(
+        bodyColor: const Color(0xFF121417),
+        displayColor: const Color(0xFF121417),
+      ),
+    );
+  }
 
-  /// Backwards-compat entry some older code may call.
-  static ThemeData get theme => darkTheme;
+  static ThemeData dark() {
+    final base = ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: primary,
+        brightness: Brightness.dark,
+      ),
+    );
+
+    return base.copyWith(
+      scaffoldBackgroundColor: const Color(0xFF0B0D10),
+      cardTheme: const CardThemeData(
+        color: Color(0xFF111318),
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(18)),
+          side: BorderSide(color: Color(0xFF22252F)),
+        ),
+      ),
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: Color(0xFF0B0D10),
+        selectedItemColor: primary,
+        unselectedItemColor: Colors.white60,
+      ),
+    );
+  }
+
+  static ThemeData scanXDark() {
+    return dark().copyWith(
+      scaffoldBackgroundColor: const Color(0xFF07090C),
+      cardTheme: const CardThemeData(
+        color: Color(0xFF0F1216),
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(18)),
+          side: BorderSide(color: Color(0xFF1E2330)),
+        ),
+      ),
+    );
+  }
 }

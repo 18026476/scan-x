@@ -5,10 +5,7 @@ import 'features/navigation/main_navigation.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // REQUIRED: prevents "SettingsService not initialized" red screen
   await SettingsService.init();
-
   runApp(const ScanXApp());
 }
 
@@ -17,65 +14,101 @@ class ScanXApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'SCAN-X',
-      debugShowCheckedModeBanner: false,
+    final settings = SettingsService.instance;
 
-      // Force the “second screenshot” light look
-      themeMode: ThemeMode.light,
-      theme: _buildLightTheme(),
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: settings.themeModeListenable,
+      builder: (context, mode, _) {
+        final isScanXDark = (settings.appThemeIndex == 3);
 
-      // Your app shell (tabs)
-      home: const MainNavigation(),
+        return MaterialApp(
+          title: 'SCAN-X',
+          debugShowCheckedModeBanner: false,
+          themeMode: mode,
+          theme: _buildLightTheme(),
+          darkTheme: isScanXDark ? _buildScanXDarkTheme() : _buildDarkTheme(),
+          home: const MainNavigation(),
+        );
+      },
     );
   }
 }
 
+/* keep your theme builders here (unchanged if already working) */
 ThemeData _buildLightTheme() {
   const primary = Color(0xFF1ECB7B);
-
   final base = ThemeData(
     useMaterial3: true,
     brightness: Brightness.light,
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: primary,
-      brightness: Brightness.light,
-    ),
+    colorScheme: ColorScheme.fromSeed(seedColor: primary, brightness: Brightness.light),
   );
 
   return base.copyWith(
     scaffoldBackgroundColor: const Color(0xFFF7F8FA),
-    cardTheme: base.cardTheme.copyWith(
-      color: Colors.white,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-        side: BorderSide(color: Colors.black.withOpacity(0.10)),
-      ),
-    ),
     appBarTheme: base.appBarTheme.copyWith(
       backgroundColor: const Color(0xFFF7F8FA),
       foregroundColor: Colors.black,
       elevation: 0,
       centerTitle: false,
-      titleTextStyle: const TextStyle(
-        color: Colors.black,
-        fontSize: 18,
-        fontWeight: FontWeight.w700,
+      titleTextStyle: const TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.w700),
+    ),
+    cardTheme: const CardThemeData(
+      color: Colors.white,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(18)),
+        side: BorderSide(color: Color(0x1A000000)),
       ),
+    ),
+    dividerTheme: const DividerThemeData(color: Color(0x14000000), thickness: 1),
+    bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+      backgroundColor: Color(0xFFF7F8FA),
+      selectedItemColor: primary,
+      unselectedItemColor: Colors.black54,
     ),
     textTheme: base.textTheme.apply(
       bodyColor: const Color(0xFF121417),
       displayColor: const Color(0xFF121417),
     ),
-    bottomNavigationBarTheme: base.bottomNavigationBarTheme.copyWith(
-      backgroundColor: const Color(0xFFF7F8FA),
-      selectedItemColor: primary,
-      unselectedItemColor: Colors.black54,
+  );
+}
+
+ThemeData _buildDarkTheme() {
+  const primary = Color(0xFF1ECB7B);
+  final base = ThemeData(
+    useMaterial3: true,
+    brightness: Brightness.dark,
+    colorScheme: ColorScheme.fromSeed(seedColor: primary, brightness: Brightness.dark),
+  );
+
+  return base.copyWith(
+    scaffoldBackgroundColor: const Color(0xFF0B0D10),
+    cardTheme: const CardThemeData(
+      color: Color(0xFF111318),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(18)),
+        side: BorderSide(color: Color(0xFF22252F)),
+      ),
     ),
-    dividerTheme: base.dividerTheme.copyWith(
-      color: Colors.black.withOpacity(0.08),
-      thickness: 1,
+    bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+      backgroundColor: Color(0xFF0B0D10),
+      selectedItemColor: primary,
+      unselectedItemColor: Colors.white60,
+    ),
+  );
+}
+
+ThemeData _buildScanXDarkTheme() {
+  return _buildDarkTheme().copyWith(
+    scaffoldBackgroundColor: const Color(0xFF07090C),
+    cardTheme: const CardThemeData(
+      color: Color(0xFF0F1216),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(18)),
+        side: BorderSide(color: Color(0xFF1E2330)),
+      ),
     ),
   );
 }

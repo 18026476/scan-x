@@ -1,7 +1,7 @@
-﻿/// lib/core/services/settings_service.dart
-
+﻿import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 
 /// Central place for all SCAN-X settings.
 /// Handles loading/saving to SharedPreferences and exposes typed getters/setters.
@@ -97,6 +97,10 @@ class SettingsService {
   // ----- Singleton wiring -----
   static SettingsService? _instance;
 
+  // ----- Theme live update -----
+  final ValueNotifier<ThemeMode> _themeModeNotifier =
+  ValueNotifier<ThemeMode>(ThemeMode.system);
+
   SettingsService._(this._prefs);
 
   /// Call once at app startup (in main) before using SettingsService().
@@ -104,8 +108,15 @@ class SettingsService {
     if (_instance != null) return _instance!;
     final prefs = await SharedPreferences.getInstance();
     _instance = SettingsService._(prefs);
+
+    // Initialize theme notifier from saved preference
+    _instance!._themeModeNotifier.value = _instance!.themeMode;
+
     return _instance!;
   }
+
+  /// Compatibility: some code may call SettingsService.instance
+  static SettingsService get instance => SettingsService();
 
   /// Synchronous accessor used everywhere else.
   factory SettingsService() {
@@ -121,16 +132,24 @@ class SettingsService {
   /// Backwards-compatible alias if you ever used create() before.
   static Future<SettingsService> create() => init();
 
+  /// Listen to theme changes for instant UI updates.
+  ValueListenable<ThemeMode> get themeModeListenable => _themeModeNotifier;
+
   // ------- App Theme / Language / Security -------
 
   bool get twoFactorEnabled => _prefs.getBool(_kTwoFactor) ?? true;
   Future<void> setTwoFactorEnabled(bool value) =>
       _prefs.setBool(_kTwoFactor, value);
 
-  /// 0 = system, 1 = light, 2 = dark, 3 = SCAN-X neon/dark
+  /// 0 = system, 1 = light, 2 = dark, 3 = SCAN-X dark (recommended)
   int get appThemeIndex => _prefs.getInt(_kAppTheme) ?? 3;
-  Future<void> setAppThemeIndex(int value) =>
-      _prefs.setInt(_kAppTheme, value);
+
+  Future<void> setAppThemeIndex(int value) async {
+    await _prefs.setInt(_kAppTheme, value);
+
+    // IMPORTANT: update notifier immediately so theme changes instantly
+    _themeModeNotifier.value = themeMode;
+  }
 
   /// 0 = system/English for now
   int get appLanguageIndex => _prefs.getInt(_kAppLanguage) ?? 0;
@@ -142,6 +161,9 @@ class SettingsService {
       case 1:
         return ThemeMode.light;
       case 2:
+        return ThemeMode.dark;
+      case 3:
+      // SCAN-X Dark uses ThemeMode.dark, but app picks a different darkTheme
         return ThemeMode.dark;
       default:
         return ThemeMode.system;
@@ -448,10 +470,6 @@ class SettingsService {
   // Scan profile abstraction used by ScanService / Dashboard / Scan screen
   // ---------------------------------------------------------------------------
 
-  /// High-level scan intensity profile.
-  ///  - performance: faster, fewer ports / hosts
-  ///  - balanced: default
-  ///  - paranoid: slower, more thorough
   ScanMode get scanMode {
     final idx = _prefs.getInt(_kScanModeIndex) ?? 1; // default = balanced
     if (idx < 0 || idx >= ScanMode.values.length) {
@@ -471,7 +489,6 @@ class SettingsService {
     await _prefs.setString(_kDefaultTargetCidr, value);
   }
 
-  /// Aggregate view used by ScanService for Smart / Full scan behaviour.
   ScanSettings get settings => ScanSettings(
     defaultTargetCidr: defaultTargetCidr,
     scanMode: scanMode,
@@ -488,24 +505,20 @@ class SettingsService {
     autoQuickScanOnStartup: autoScanOnLaunch,
   );
 
-  /// Optional: write a whole profile back.
   Future<void> updateScanSettings(ScanSettings value) async {
     await setDefaultTargetCidr(value.defaultTargetCidr);
     await setScanMode(value.scanMode);
     await setHostsPerScan(value.maxDeepHosts);
     await setAutoScanOnLaunch(value.autoQuickScanOnStartup);
-    // You can expand this later to also adjust other settings.
   }
 }
 
-/// High-level scan profile used by Smart / Full scan.
 enum ScanMode {
   performance,
   balanced,
   paranoid,
 }
 
-/// Immutable scan settings projection from SettingsService.
 class ScanSettings {
   final String defaultTargetCidr;
   final ScanMode scanMode;
@@ -568,7 +581,8 @@ class ScanSettings {
       mediumRiskTotalPorts: mediumRiskTotalPorts ?? this.mediumRiskTotalPorts,
       customHighRiskPorts: customHighRiskPorts ?? this.customHighRiskPorts,
       keepOnlyLastScan: keepOnlyLastScan ?? this.keepOnlyLastScan,
-      autoQuickScanOnStartup: autoQuickScanOnStartup ?? this.autoQuickScanOnStartup,
+      autoQuickScanOnStartup:
+      autoQuickScanOnStartup ?? this.autoQuickScanOnStartup,
     );
   }
 }
