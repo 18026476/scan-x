@@ -46,3 +46,7 @@ app.*.map.json
 *.bak_*
 hardcoded_colors_report.txt
 
+
+# Local scripts
+patch_settings_service_theme_listenable.ps1
+
