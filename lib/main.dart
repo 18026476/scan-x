@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'core/widgets/keyboard_stabilizer.dart';
 
 import 'core/services/settings_service.dart';
 import 'features/navigation/main_navigation.dart';
@@ -21,7 +22,8 @@ class ScanXApp extends StatelessWidget {
       builder: (context, mode, _) {
         final isScanXDark = settings.appThemeIndex == 3;
 
-        return MaterialApp(
+        return KeyboardStabilizer(
+      child: MaterialApp(
           title: 'SCAN-X',
           debugShowCheckedModeBanner: false,
 
@@ -30,7 +32,8 @@ class ScanXApp extends StatelessWidget {
           darkTheme: isScanXDark ? _buildScanXDarkTheme() : _buildDarkTheme(),
 
           home: const MainNavigation(),
-        );
+      ),
+    );
       },
     );
   }
