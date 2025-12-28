@@ -1,10 +1,6 @@
 // lib/core/ai/router_fix_guides.dart
 //
-// Purpose: Provide simple "plain-English" router fix instructions.
-// This is deterministic and doesn't require ML.
-// You can later enrich with router vendor detection.
-//
-// Output: RouterFixGuide objects shown in AI insights.
+// Plain-English router fix instructions for home/SOHO users.
 
 class RouterFixGuide {
   final String title;
@@ -33,16 +29,14 @@ class RouterFixGuides {
       out.add(const RouterFixGuide(
         title: 'Disable WPS',
         summary:
-            'WPS makes Wi-Fi easier to join but is frequently insecure. Disabling it reduces brute-force risk.',
+            'WPS is convenient but often insecure. Disabling it reduces brute-force risk.',
         steps: [
-          'Open your router admin page (usually http://192.168.1.1).',
-          'Log in with your admin credentials.',
-          'Go to Wireless / Wi-Fi settings -> WPS.',
+          'Open router admin page (e.g., http://192.168.1.1).',
+          'Log in as administrator.',
+          'Go to Wi-Fi / Wireless settings.',
           'Turn WPS OFF.',
-          'Save changes and reboot router if prompted.',
+          'Save and reboot router.',
         ],
-        note:
-            'If you rely on WPS for pairing, switch to QR/WPA2/WPA3 pairing instead.',
       ));
     }
 
@@ -50,46 +44,42 @@ class RouterFixGuides {
       out.add(const RouterFixGuide(
         title: 'Disable UPnP',
         summary:
-            'UPnP can automatically open ports for devices. Disabling it reduces accidental exposure.',
+            'UPnP may open ports automatically and expose devices.',
         steps: [
           'Open router admin page.',
-          'Find Advanced / NAT / UPnP settings.',
+          'Navigate to Advanced / NAT / UPnP.',
           'Turn UPnP OFF.',
-          'Save changes.',
-          'If something breaks (e.g., a console), re-enable only temporarily or use manual port forwarding.',
+          'Save settings.',
         ],
+        note:
+            'If a console breaks, use manual port forwarding instead.',
       ));
     }
 
     if (dnsCheck) {
       out.add(const RouterFixGuide(
-        title: 'Verify DNS Servers',
+        title: 'Verify DNS servers',
         summary:
-            'DNS hijacking can redirect you to fake websites. Confirm DNS is set to a trusted provider.',
+            'Unknown DNS servers may indicate hijacking.',
         steps: [
           'Open router admin page.',
-          'Go to Internet / WAN / DHCP / DNS settings.',
-          'Ensure DNS is set to your ISP or trusted public DNS (e.g., Cloudflare/Google).',
-          'Save changes.',
-          'Restart router if required.',
+          'Go to Internet / WAN / DNS.',
+          'Use ISP DNS or trusted DNS (Cloudflare / Google).',
+          'Save and reboot router.',
         ],
-        note:
-            'If you see unknown DNS servers, change them immediately and update your router admin password.',
       ));
     }
 
     if (adminHarden) {
       out.add(const RouterFixGuide(
-        title: 'Harden Router Admin Access',
+        title: 'Harden router admin access',
         summary:
-            'Router admin panels should be LAN-only and HTTPS-only wherever possible.',
+            'Admin panels should be LAN-only and protected.',
         steps: [
-          'Open router admin page.',
-          'Go to Administration / System / Management.',
-          'Disable Remote Management (WAN admin).',
-          'Enable HTTPS-only for the admin interface (if available).',
+          'Disable remote (WAN) admin access.',
+          'Enable HTTPS for admin page.',
           'Set a strong admin password.',
-          'Enable MFA (if the router supports it).',
+          'Enable MFA if supported.',
         ],
       ));
     }

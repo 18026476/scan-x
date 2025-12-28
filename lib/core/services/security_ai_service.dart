@@ -4,6 +4,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'scan_service.dart';
 
+// NEW: wire in your created AI modules
+import '../ai/ai_priority_fix_engine.dart';
+import '../ai/router_fix_guides.dart';
+
 enum AiSeverity { low, medium, high }
 
 class AiInsight {
@@ -51,25 +55,75 @@ class SecurityAiService {
     final hosts = result.hosts;
     final insights = <AiInsight>[];
 
+    // ==============================
+    // (1) AI PRIORITY FIX ENGINE
+    // ==============================
+    final prio = AiPriorityFixEngine.recommend(result);
+    if (prio != null) {
+      insights.add(
+        AiInsight(
+          title: 'Fix this first: ${prio.title}',
+          message:
+          '${prio.why}\n\nEstimated impact:\n• Network health +${prio.estimatedHealthGain}%\n• Risk reduction ~${prio.estimatedRiskReduction}%',
+          action: prio.actionSteps,
+          severity: AiSeverity.high,
+          tag: 'priority',
+        ),
+      );
+    }
+
+    // Existing: summary
     insights.add(_buildTopSummary(hosts));
 
+    // Existing: explain findings
     if (flags.explainVulns) {
       insights.addAll(_explainFindings(hosts));
     }
+
+    // Existing: unnecessary services
     if (flags.detectUnnecessaryServices) {
       insights.addAll(_unnecessaryServices(hosts));
     }
+
+    // Existing: router hardening playbook
     if (flags.routerPlaybooks) {
       insights.addAll(_routerHardening(routerSummary, hosts));
+
+      // ==========================================
+      // (2) PLAIN-ENGLISH ROUTER FIX INSTRUCTIONS
+      // ==========================================
+      final guides = RouterFixGuides.forCommonHomeRisks(
+        wps: true,
+        upnp: true,
+        dnsCheck: true,
+        adminHarden: true,
+      );
+
+      for (final g in guides) {
+        insights.add(
+          AiInsight(
+            title: g.title,
+            message: g.summary,
+            action:
+            'Steps:\n- ${g.steps.join('\n- ')}${g.note != null ? '\n\nNote: ${g.note}' : ''}',
+            severity: AiSeverity.medium,
+            tag: 'router_guide',
+          ),
+        );
+      }
     }
+
+    // Existing: proactive warnings
     if (flags.proactiveWarnings) {
       insights.addAll(_proactiveWarnings(hosts));
     }
+
+    // Existing: guided fixes
     if (flags.oneClickFixes) {
       insights.addAll(_guidedFixes(hosts));
     }
 
-    return _dedupe(insights).take(10).toList();
+    return _dedupe(insights).take(12).toList();
   }
 
   List<AiInsight> deviceInsights({
@@ -91,7 +145,9 @@ class SecurityAiService {
           title: 'No open ports detected',
           message: '$name does not appear to expose common TCP services.',
           severity: AiSeverity.low,
-          action: flags.oneClickFixes ? 'Keep firmware/OS updated and re-scan weekly.' : null,
+          action: flags.oneClickFixes
+              ? 'Keep firmware/OS updated and re-scan weekly.'
+              : null,
           tag: 'device',
         ),
       );
@@ -102,7 +158,8 @@ class SecurityAiService {
         ? AiSeverity.high
         : (host.risk == RiskLevel.medium ? AiSeverity.medium : AiSeverity.low);
 
-    final topPorts = host.openPorts.take(6).map((p) => '${p.port}/${p.protocol}').join(', ');
+    final topPorts =
+    host.openPorts.take(6).map((p) => '${p.port}/${p.protocol}').join(', ');
     insights.add(
       AiInsight(
         title: 'Open services detected',
@@ -142,7 +199,8 @@ class SecurityAiService {
         insights.add(
           const AiInsight(
             title: 'RDP should be restricted',
-            message: 'RDP (3389) is frequently brute-forced. Restrict to LAN/VPN or disable.',
+            message:
+            'RDP (3389) is frequently brute-forced. Restrict to LAN/VPN or disable.',
             severity: AiSeverity.high,
             tag: 'rdp',
           ),
@@ -152,7 +210,8 @@ class SecurityAiService {
         insights.add(
           const AiInsight(
             title: 'UPnP/SSDP exposure',
-            message: 'UPnP (1900) may allow unwanted automatic port mappings. Disable unless required.',
+            message:
+            'UPnP (1900) may allow unwanted automatic port mappings. Disable unless required.',
             severity: AiSeverity.medium,
             tag: 'upnp',
           ),
@@ -205,7 +264,8 @@ class SecurityAiService {
     final med = hosts.where((h) => h.risk == RiskLevel.medium).length;
     final low = hosts.where((h) => h.risk == RiskLevel.low).length;
 
-    final sev = high > 0 ? AiSeverity.high : (med > 0 ? AiSeverity.medium : AiSeverity.low);
+    final sev =
+    high > 0 ? AiSeverity.high : (med > 0 ? AiSeverity.medium : AiSeverity.low);
 
     return AiInsight(
       title: 'AI summary',
@@ -531,17 +591,24 @@ class AiFlags {
     }
 
     return AiFlags(
-      aiAssistantEnabled: readBool(['aiAssistantEnabled', 'ai.enabled', 'ai_assistant_enabled']),
-      explainVulns: readBool(['aiExplainVuln', 'ai.explainVuln', 'ai_explain_vulns']),
-      oneClickFixes: readBool(['aiOneClickFix', 'ai.oneClickFix', 'ai_one_click_fixes']),
-      riskScoring: readBool(['aiRiskScoring', 'ai.riskScoring', 'ai_risk_scoring']),
-      routerPlaybooks: readBool(['aiRouterHardening', 'ai.routerHardening', 'ai_router_playbooks']),
+      aiAssistantEnabled:
+      readBool(['aiAssistantEnabled', 'ai.enabled', 'ai_assistant_enabled']),
+      explainVulns:
+      readBool(['aiExplainVuln', 'ai.explainVuln', 'ai_explain_vulns']),
+      oneClickFixes:
+      readBool(['aiOneClickFix', 'ai.oneClickFix', 'ai_one_click_fixes']),
+      riskScoring:
+      readBool(['aiRiskScoring', 'ai.riskScoring', 'ai_risk_scoring']),
+      routerPlaybooks: readBool(
+          ['aiRouterHardening', 'ai.routerHardening', 'ai_router_playbooks']),
       detectUnnecessaryServices: readBool([
         'aiDetectUnnecessaryServices',
         'ai.detectUnnecessaryServices',
         'ai_detect_unnecessary_services'
       ]),
-      proactiveWarnings: readBool(['aiProactiveWarnings', 'ai.proactiveWarnings', 'ai_proactive_warnings']),
+      proactiveWarnings:
+      readBool(['aiProactiveWarnings', 'ai.proactiveWarnings', 'ai_proactive_warnings']),
     );
   }
 }
+
