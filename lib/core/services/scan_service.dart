@@ -30,7 +30,7 @@ class OpenPort {
 
 /// Represents a detected host in the scan result.
 class DetectedHost {
-  final String address; // IP
+  final String address; // IP or hostname
   final String? hostname;
   final List<OpenPort> openPorts;
   final RiskLevel risk;
@@ -67,7 +67,7 @@ class ScanService {
   static final ScanService _instance = ScanService._internal();
   factory ScanService() => _instance;
 
-  /// Last completed scan (Quick/Smart/Full).
+  /// Last completed scan (Smart or Full).
   ScanResult? lastResult;
 
   // ---------------------------------------------------------------------------
@@ -75,17 +75,18 @@ class ScanService {
   // ---------------------------------------------------------------------------
 
   /// Dashboard helper: runs a quick Smart Scan using the saved Settings target.
-  /// Robust: reads SharedPreferences directly so it doesn't depend on any
-  /// specific Settings model fields.
+  /// This avoids compile-time dependency on ScanSettings having a specific
+  /// field name (we read SharedPreferences directly for robustness).
   Future<ScanResult> runQuickSmartScanFromDefaults() async {
     final prefs = await SharedPreferences.getInstance();
 
     // Try a few likely keys. If none exist, fallback to a safe default.
-    final target = prefs.getString('defaultTarget') ??
-        prefs.getString('targetCidr') ??
-        prefs.getString('defaultTargetCidr') ??
-        prefs.getString('scanTarget') ??
-        '192.168.1.0/24';
+    final target =
+        prefs.getString('defaultTarget') ??
+            prefs.getString('targetCidr') ??
+            prefs.getString('defaultTargetCidr') ??
+            prefs.getString('scanTarget') ??
+            '192.168.1.0/24';
 
     return runQuickSmartScan(target);
   }
@@ -95,9 +96,9 @@ class ScanService {
   /// - host timeout
   /// - reduced retries
   Future<ScanResult> runQuickSmartScan(String target) async {
+    final settings = SettingsService().settings;
     final started = DateTime.now();
 
-    final settings = SettingsService().settings; // may be any model type
     final args = _buildQuickSmartArgs(target, settings);
     final stdoutStr = await _runNmap(args);
 
@@ -117,9 +118,9 @@ class ScanService {
 
   /// Fast "Smart Scan" – focuses on common ports and speed.
   Future<ScanResult> runSmartScan(String target) async {
+    final settings = SettingsService().settings;
     final started = DateTime.now();
 
-    final settings = SettingsService().settings;
     final args = _buildSmartScanArgs(target, settings);
     final stdoutStr = await _runNmap(args);
 
@@ -139,9 +140,9 @@ class ScanService {
 
   /// Deep "Full Scan" – scans all 1–65535 ports.
   Future<ScanResult> runFullScan(String target) async {
+    final settings = SettingsService().settings;
     final started = DateTime.now();
 
-    final settings = SettingsService().settings;
     final args = _buildFullScanArgs(target, settings);
     final stdoutStr = await _runNmap(args);
 
@@ -165,53 +166,12 @@ class ScanService {
   }
 
   // ---------------------------------------------------------------------------
-  // SETTINGS ACCESS (NO HARD DEPENDENCY ON ScanSettings / ScanMode TYPES)
-  // ---------------------------------------------------------------------------
-
-  /// Returns "performance" | "balanced" | "paranoid".
-  /// Works whether scanMode is an enum, a string, or an int index.
-  String _scanModeName(dynamic settings) {
-    try {
-      final mode = settings.scanMode;
-
-      // If it's a Dart enum, toString() is "ScanMode.balanced".
-      final s = mode.toString().toLowerCase();
-      if (s.contains('performance')) return 'performance';
-      if (s.contains('paranoid')) return 'paranoid';
-      if (s.contains('balanced')) return 'balanced';
-
-      // If it's a string.
-      if (mode is String) {
-        final m = mode.toLowerCase();
-        if (m.contains('performance')) return 'performance';
-        if (m.contains('paranoid')) return 'paranoid';
-        if (m.contains('balanced')) return 'balanced';
-      }
-
-      // If it's an int index (best-effort mapping).
-      if (mode is int) {
-        // Common mapping: 0=performance, 1=balanced, 2=paranoid
-        if (mode == 0) return 'performance';
-        if (mode == 2) return 'paranoid';
-        return 'balanced';
-      }
-    } catch (_) {
-      // fall through
-    }
-
-    return 'balanced';
-  }
-
-  bool _isParanoid(dynamic settings) => _scanModeName(settings) == 'paranoid';
-  bool _isPerformance(dynamic settings) =>
-      _scanModeName(settings) == 'performance';
-
-  // ---------------------------------------------------------------------------
   // ARG BUILDERS
   // ---------------------------------------------------------------------------
 
-  List<String> _buildQuickSmartArgs(String target, dynamic settings) {
-    // Conservative for home networks: fast + smaller port set + host timeout.
+  List<String> _buildQuickSmartArgs(String target, ScanSettings settings) {
+    // This is deliberately conservative for home networks:
+    // fast timing + smaller port set + host timeout.
     final args = <String>[
       '-sV',
       '-T4',
@@ -224,11 +184,10 @@ class ScanService {
     ];
 
     // If user selected paranoid, slow it slightly (but still "quick").
-    if (_isParanoid(settings)) {
+    if (settings.scanMode == ScanMode.paranoid) {
       // Reduce aggression for flaky routers.
       args.remove('-T4');
       args.insert(1, '-T3');
-
       // Give a bit more time per host.
       final idx = args.indexOf('--host-timeout');
       if (idx != -1 && idx + 1 < args.length) {
@@ -240,37 +199,45 @@ class ScanService {
     return args;
   }
 
-  List<String> _buildSmartScanArgs(String target, dynamic settings) {
+  List<String> _buildSmartScanArgs(String target, ScanSettings settings) {
     final args = <String>[
       '-sV',
       '-T4',
     ];
 
-    if (_isPerformance(settings)) {
-      args.addAll(['--top-ports', '200']);
-    } else if (_isParanoid(settings)) {
-      args.addAll(['--top-ports', '5000', '-T3']);
-    } else {
-      args.addAll(['--top-ports', '1000']);
+    switch (settings.scanMode) {
+      case ScanMode.performance:
+        args.addAll(['--top-ports', '200']);
+        break;
+      case ScanMode.balanced:
+        args.addAll(['--top-ports', '1000']);
+        break;
+      case ScanMode.paranoid:
+        args.addAll(['--top-ports', '5000', '-T3']);
+        break;
     }
 
     args.add(target);
     return args;
   }
 
-  List<String> _buildFullScanArgs(String target, dynamic settings) {
+  List<String> _buildFullScanArgs(String target, ScanSettings settings) {
     final args = <String>[
       '-sV',
       '-p',
       '1-65535',
     ];
 
-    if (_isPerformance(settings)) {
-      args.add('-T4');
-    } else if (_isParanoid(settings)) {
-      args.add('-T2');
-    } else {
-      args.add('-T3');
+    switch (settings.scanMode) {
+      case ScanMode.performance:
+        args.add('-T4');
+        break;
+      case ScanMode.balanced:
+        args.add('-T3');
+        break;
+      case ScanMode.paranoid:
+        args.add('-T2');
+        break;
     }
 
     args.add(target);
@@ -282,7 +249,7 @@ class ScanService {
   // ---------------------------------------------------------------------------
 
   Future<String> _runNmap(List<String> args) async {
-    // Windows-safe decoding: systemEncoding avoids UTF-8 pipe crashes.
+    // Windows-safe decoding: systemEncoding avoids UTF-8 pipe crashes
     final result = await Process.run(
       'nmap',
       args,
@@ -306,11 +273,13 @@ class ScanService {
     // Remove replacement chars and trim weird nulls.
     var t = s.replaceAll('\uFFFD', '');
 
-    // Common mojibake fragments seen in your UI/logs.
+    // Very common mojibake fragments seen in your UI/logs.
     // We do NOT try to "decode back" (unsafe). We just strip noise.
-    const junk = <String>[
+    const junk = [
+      'ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“',
       'ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“',
       'ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢',
+      'ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“',
       'ÃƒÂ¢Ã¢â€šÂ¬',
       'ÃƒÂ¢Ã¢â€š',
       'ÃƒÂ¢',
@@ -328,7 +297,7 @@ class ScanService {
 
   final RegExp _hostRegex = RegExp(r'^Nmap scan report for (.+)$');
   final RegExp _portLineRegex =
-      RegExp(r'^(\d+)/(tcp|udp)\s+open\s+([\w\-\?\.\+]+)');
+  RegExp(r'^(\d+)/(tcp|udp)\s+open\s+([\w\-\?\.\+]+)');
 
   List<DetectedHost> _parseNmapOutput(String stdoutStr) {
     final lines = stdoutStr.split('\n');
@@ -340,7 +309,6 @@ class ScanService {
 
     void flushCurrentHost() {
       if (currentAddress == null) return;
-
       final portsCopy = List<OpenPort>.from(currentPorts);
       currentPorts.clear();
 
@@ -359,19 +327,15 @@ class ScanService {
       currentHostname = null;
     }
 
-    for (final rawLine in lines) {
+    for (var rawLine in lines) {
       final line = rawLine.trimRight();
 
-      // Start of a new host.
       final hostMatch = _hostRegex.firstMatch(line);
       if (hostMatch != null) {
         flushCurrentHost();
 
         final hostString = hostMatch.group(1) ?? '';
 
-        // hostString examples:
-        //  - 192.168.1.10
-        //  - mypc (192.168.1.20)
         String address = hostString;
         String? hostname;
 
@@ -387,7 +351,6 @@ class ScanService {
         continue;
       }
 
-      // Port lines.
       final portMatch = _portLineRegex.firstMatch(line);
       if (portMatch != null && currentAddress != null) {
         final port = int.tryParse(portMatch.group(1) ?? '') ?? 0;
@@ -401,12 +364,11 @@ class ScanService {
             serviceName: service,
           ),
         );
+        continue;
       }
     }
 
-    // Flush last host if pending.
     flushCurrentHost();
-
     return hosts;
   }
 
@@ -415,7 +377,9 @@ class ScanService {
   // ---------------------------------------------------------------------------
 
   RiskLevel _calculateRiskLevel(List<OpenPort> ports) {
-    if (ports.isEmpty) return RiskLevel.low;
+    if (ports.isEmpty) {
+      return RiskLevel.low;
+    }
 
     bool hasHigh = false;
     bool hasMedium = false;
@@ -423,7 +387,6 @@ class ScanService {
     for (final p in ports) {
       final s = p.serviceName.toLowerCase();
 
-      // High-risk services: remote admin & file shares exposed.
       if (p.port == 21 ||
           p.port == 23 ||
           p.port == 3389 ||
@@ -436,7 +399,6 @@ class ScanService {
         break;
       }
 
-      // Medium-risk: typical entry points.
       if (p.port == 22 ||
           p.port == 80 ||
           p.port == 443 ||
