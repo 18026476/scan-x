@@ -1,0 +1,2678 @@
+SCAN-X FILE EXPORT
+Generated: 2025-12-24 02:16:21
+Project: C:\Users\Acer\scanx\scanx_app
+
+============================================================
+FILE: lib\features\settings\settings_screen.dart
+PATH: C:\Users\Acer\scanx\scanx_app\lib\features\settings\settings_screen.dart
+============================================================
+// lib/features/settings/settings_screen.dart
+
+import 'package:flutter/material.dart';
+import 'package:scanx_app/core/services/settings_service.dart';
+
+class SettingsScreen extends StatefulWidget {
+  const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen>
+    with SingleTickerProviderStateMixin {
+  // -------- LOCAL STATE (backed by SettingsService) --------
+
+  // Scan & detection
+  bool quickScan = true;
+  bool deepScan = false;
+  bool stealthScan = false;
+  bool continuousMonitoring = false;
+  int scanFrequency = 0; // 0 = manual, 1 = hourly, etc.
+  int hostsPerScan = 256;
+
+  // Router & IoT
+  bool routerWeakPassword = true;
+  bool routerOpenPorts = true;
+  bool routerOutdatedFirmware = true;
+  bool routerUpnpCheck = true;
+  bool routerWpsCheck = true;
+  bool routerDnsHijack = true;
+
+  bool iotOutdatedFirmware = true;
+  bool iotDefaultPasswords = true;
+  bool iotVulnDbMatch = true;
+  bool iotAutoRecommendations = true;
+
+  // Alerts (engine level)
+  bool alertNewDevice = true;
+  bool alertMacChange = true;
+  bool alertArpSpoof = true;
+  bool alertPortScanAttempts = true;
+
+  // Notifications (user-facing)
+  bool notifyNewDevice = false;
+  bool notifyUnknownDevice = false;
+  bool notifyRouterVuln = false;
+  bool notifyIotWarning = false;
+  bool notifyHighRisk = true;
+  bool notifyScanCompleted = true;
+  bool notifyAutoScanResults = true;
+
+  // Alert style
+  bool alertSoundEnabled = true;
+  bool alertVibrationEnabled = true;
+  bool alertSilentMode = false;
+  double alertSensitivity = 1; // 0 = low, 1 = normal, 2 = aggressive
+
+  // App & privacy
+  bool twoFactorEnabled = true;
+  int appTheme = 3; // 0 system, 1 light, 2 dark, 3 SCAN-X dark
+  int appLanguage = 0; // 0 EN, others later
+
+  int logRetentionDays = 30;
+  bool anonymousUsageAnalytics = false;
+  int performanceMode = 1; // 0 battery saver, 1 balanced, 2 performance
+
+  bool autoStartOnBoot = false;
+  bool autoScanOnLaunch = false;
+  bool keepScreenAwake = false;
+
+  bool autoUpdateApp = true;
+  bool notifyBeforeUpdate = true;
+  bool betaUpdates = false;
+
+  // AI & Labs
+  bool aiAssistantEnabled = true;
+  bool aiExplainVuln = true;
+  bool aiOneClickFix = true;
+  bool aiRiskScoring = true;
+  bool aiRouterHardening = false;
+  bool aiDetectUnnecessaryServices = false;
+  bool aiProactiveWarnings = false;
+
+  bool packetSnifferLite = false;
+  bool wifiDeauthDetection = false;
+  bool rogueApDetection = false;
+  bool hiddenSsidDetection = false;
+
+  bool betaBehaviourThreatDetection = false;
+  bool betaLocalMlProfiling = false;
+  bool betaIotFingerprinting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final s = SettingsService();
+
+    // Scan & detection
+    quickScan = s.quickScan;
+    deepScan = s.deepScan;
+    stealthScan = s.stealthScan;
+    continuousMonitoring = s.continuousMonitoring;
+    scanFrequency = s.scanFrequency;
+    hostsPerScan = s.hostsPerScan;
+
+    // Router & IoT
+    routerWeakPassword = s.routerWeakPassword;
+    routerOpenPorts = s.routerOpenPorts;
+    routerOutdatedFirmware = s.routerOutdatedFirmware;
+    routerUpnpCheck = s.routerUpnpCheck;
+    routerWpsCheck = s.routerWpsCheck;
+    routerDnsHijack = s.routerDnsHijack;
+
+    iotOutdatedFirmware = s.iotOutdatedFirmware;
+    iotDefaultPasswords = s.iotDefaultPasswords;
+    iotVulnDbMatch = s.iotVulnDbMatch;
+    iotAutoRecommendations = s.iotAutoRecommendations;
+
+    // Alerts (engine level)
+    alertNewDevice = s.alertNewDevice;
+    alertMacChange = s.alertMacChange;
+    alertArpSpoof = s.alertArpSpoof;
+    alertPortScanAttempts = s.alertPortScanAttempts;
+
+    // Notifications
+    notifyNewDevice = s.notifyNewDevice;
+    notifyUnknownDevice = s.notifyUnknownDevice;
+    notifyRouterVuln = s.notifyRouterVuln;
+    notifyIotWarning = s.notifyIotWarning;
+    notifyHighRisk = s.notifyHighRisk;
+    notifyScanCompleted = s.notifyScanCompleted;
+    notifyAutoScanResults = s.notifyAutoScanResults;
+
+    // Alert style
+    alertSoundEnabled = s.alertSoundEnabled;
+    alertVibrationEnabled = s.alertVibrationEnabled;
+    alertSilentMode = s.alertSilentMode;
+    alertSensitivity = s.alertSensitivity.toDouble();
+
+    // App & privacy
+    twoFactorEnabled = s.twoFactorEnabled;
+    appTheme = s.appThemeIndex;
+    appLanguage = s.appLanguageIndex;
+
+    logRetentionDays = s.logRetentionDays;
+    anonymousUsageAnalytics = s.anonymousUsageAnalytics;
+    performanceMode = s.performanceMode;
+
+    autoStartOnBoot = s.autoStartOnBoot;
+    autoScanOnLaunch = s.autoScanOnLaunch;
+    keepScreenAwake = s.keepScreenAwake;
+
+    autoUpdateApp = s.autoUpdateApp;
+    notifyBeforeUpdate = s.notifyBeforeUpdate;
+    betaUpdates = s.betaUpdates;
+
+    // AI & labs
+    aiAssistantEnabled = s.aiAssistantEnabled;
+    aiExplainVuln = s.aiExplainVuln;
+    aiOneClickFix = s.aiOneClickFix;
+    aiRiskScoring = s.aiRiskScoring;
+    aiRouterHardening = s.aiRouterHardening;
+    aiDetectUnnecessaryServices = s.aiDetectUnnecessaryServices;
+    aiProactiveWarnings = s.aiProactiveWarnings;
+
+    packetSnifferLite = s.packetSnifferLite;
+    wifiDeauthDetection = s.wifiDeauthDetection;
+    rogueApDetection = s.rogueApDetection;
+    hiddenSsidDetection = s.hiddenSsidDetection;
+
+    betaBehaviourThreatDetection = s.betaBehaviourThreatDetection;
+    betaLocalMlProfiling = s.betaLocalMlProfiling;
+    betaIotFingerprinting = s.betaIotFingerprinting;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return DefaultTabController(
+      length: 5,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Settings'),
+          centerTitle: true,
+          bottom: const TabBar(
+            isScrollable: true,
+            tabs: [
+              Tab(text: 'Scan & detection'),
+              Tab(text: 'Router & IoT'),
+              Tab(text: 'Alerts'),
+              Tab(text: 'App & privacy'),
+              Tab(text: 'AI & labs'),
+            ],
+          ),
+        ),
+        body: TabBarView(
+          children: [
+            _buildScanTab(theme),
+            _buildRouterIotTab(theme),
+            _buildAlertsTab(theme),
+            _buildAppPrivacyTab(theme),
+            _buildAiLabsTab(theme),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ------------- TAB 1: SCAN & DETECTION -------------
+
+  Widget _buildScanTab(ThemeData theme) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        _sectionTitle('Scan modes'),
+        _switchTile(
+          title: 'Quick Smart Scan',
+          subtitle: 'Fast scan of common ports and hosts.',
+          value: quickScan,
+          onChanged: (v) {
+            setState(() => quickScan = v);
+            SettingsService().setQuickScan(v);
+          },
+        ),
+        _switchTile(
+          title: 'Deep scan',
+          subtitle: 'Slower, full-port scan for more detail.',
+          value: deepScan,
+          onChanged: (v) {
+            setState(() => deepScan = v);
+            SettingsService().setDeepScan(v);
+          },
+        ),
+        _switchTile(
+          title: 'Stealth scan',
+          subtitle: 'Use quieter scan patterns to reduce detection.',
+          value: stealthScan,
+          onChanged: (v) {
+            setState(() => stealthScan = v);
+            SettingsService().setStealthScan(v);
+          },
+        ),
+        _switchTile(
+          title: 'Continuous monitoring',
+          subtitle: 'Keep watching for new devices and changes in background.',
+          value: continuousMonitoring,
+          onChanged: (v) {
+            setState(() => continuousMonitoring = v);
+            SettingsService().setContinuousMonitoring(v);
+          },
+        ),
+        const SizedBox(height: 16),
+        _sectionTitle('Scan schedule'),
+        ListTile(
+          title: const Text('Scan frequency'),
+          subtitle: Text(_scanFrequencyLabel(scanFrequency)),
+          trailing: DropdownButton<int>(
+            value: scanFrequency,
+            onChanged: (v) {
+              if (v == null) return;
+              setState(() => scanFrequency = v);
+              SettingsService().setScanFrequency(v);
+            },
+            items: const [
+              DropdownMenuItem(value: 0, child: Text('Manual only')),
+              DropdownMenuItem(value: 1, child: Text('Every hour')),
+              DropdownMenuItem(value: 2, child: Text('Every 6 hours')),
+              DropdownMenuItem(value: 3, child: Text('Once per day')),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        ListTile(
+          title: const Text('Max hosts per scan'),
+          subtitle: Text('$hostsPerScan hosts'),
+        ),
+        Slider(
+          value: hostsPerScan.toDouble(),
+          min: 32,
+          max: 1024,
+          divisions: (1024 - 32) ~/ 32,
+          label: hostsPerScan.toString(),
+          onChanged: (v) {
+            final rounded = v.round();
+            setState(() => hostsPerScan = rounded);
+            SettingsService().setHostsPerScan(rounded);
+          },
+        ),
+      ],
+    );
+  }
+
+  String _scanFrequencyLabel(int value) {
+    switch (value) {
+      case 1:
+        return 'Every hour';
+      case 2:
+        return 'Every 6 hours';
+      case 3:
+        return 'Once per day';
+      default:
+        return 'Manual only';
+    }
+  }
+
+  // ------------- TAB 2: ROUTER & IOT -------------
+
+  Widget _buildRouterIotTab(ThemeData theme) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        _sectionTitle('Router checks'),
+        _switchTile(
+          title: 'Weak / default router password',
+          subtitle: 'Warn if router uses weak or known default credentials.',
+          value: routerWeakPassword,
+          onChanged: (v) {
+            setState(() => routerWeakPassword = v);
+            SettingsService().setRouterWeakPassword(v);
+          },
+        ),
+        _switchTile(
+          title: 'Open risky ports',
+          subtitle: 'Detect exposed management or insecure WAN ports.',
+          value: routerOpenPorts,
+          onChanged: (v) {
+            setState(() => routerOpenPorts = v);
+            SettingsService().setRouterOpenPorts(v);
+          },
+        ),
+        _switchTile(
+          title: 'Outdated firmware',
+          subtitle: 'Flag routers that havenâ€™t been patched in a while.',
+          value: routerOutdatedFirmware,
+          onChanged: (v) {
+            setState(() => routerOutdatedFirmware = v);
+            SettingsService().setRouterOutdatedFirmware(v);
+          },
+        ),
+        _switchTile(
+          title: 'UPnP exposure',
+          subtitle: 'Detect unsafe automatic port-forwarding.',
+          value: routerUpnpCheck,
+          onChanged: (v) {
+            setState(() => routerUpnpCheck = v);
+            SettingsService().setRouterUpnpCheck(v);
+          },
+        ),
+        _switchTile(
+          title: 'WPS enabled',
+          subtitle: 'Warn about WPS (easy-connect) being enabled.',
+          value: routerWpsCheck,
+          onChanged: (v) {
+            setState(() => routerWpsCheck = v);
+            SettingsService().setRouterWpsCheck(v);
+          },
+        ),
+        _switchTile(
+          title: 'DNS hijack / redirection',
+          subtitle: 'Check for suspicious DNS servers.',
+          value: routerDnsHijack,
+          onChanged: (v) {
+            setState(() => routerDnsHijack = v);
+            SettingsService().setRouterDnsHijack(v);
+          },
+        ),
+        const SizedBox(height: 16),
+        _sectionTitle('IoT device checks'),
+        _switchTile(
+          title: 'Outdated IoT firmware',
+          subtitle: 'Flag smart devices with very old firmware versions.',
+          value: iotOutdatedFirmware,
+          onChanged: (v) {
+            setState(() => iotOutdatedFirmware = v);
+            SettingsService().setIotOutdatedFirmware(v);
+          },
+        ),
+        _switchTile(
+          title: 'Default / weak IoT passwords',
+          subtitle: 'Detect common default credentials on cameras, DVRs, etc.',
+          value: iotDefaultPasswords,
+          onChanged: (v) {
+            setState(() => iotDefaultPasswords = v);
+            SettingsService().setIotDefaultPasswords(v);
+          },
+        ),
+        _switchTile(
+          title: 'Known vulnerabilities (CVE / vuln DB)',
+          subtitle: 'Match IoT fingerprints against known vulnerability feeds.',
+          value: iotVulnDbMatch,
+          onChanged: (v) {
+            setState(() => iotVulnDbMatch = v);
+            SettingsService().setIotVulnDbMatch(v);
+          },
+        ),
+        _switchTile(
+          title: 'Auto recommendations',
+          subtitle: 'Show simple hardening tips for each risky IoT device.',
+          value: iotAutoRecommendations,
+          onChanged: (v) {
+            setState(() => iotAutoRecommendations = v);
+            SettingsService().setIotAutoRecommendations(v);
+          },
+        ),
+      ],
+    );
+  }
+
+  // ------------- TAB 3: ALERTS & NOTIFICATIONS -------------
+
+  Widget _buildAlertsTab(ThemeData theme) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        _sectionTitle('Detection rules'),
+        _switchTile(
+          title: 'New device joins network',
+          value: alertNewDevice,
+          onChanged: (v) {
+            setState(() => alertNewDevice = v);
+            SettingsService().setAlertNewDevice(v);
+          },
+        ),
+        _switchTile(
+          title: 'Device MAC address changed',
+          value: alertMacChange,
+          onChanged: (v) {
+            setState(() => alertMacChange = v);
+            SettingsService().setAlertMacChange(v);
+          },
+        ),
+        _switchTile(
+          title: 'Possible ARP spoofing',
+          value: alertArpSpoof,
+          onChanged: (v) {
+            setState(() => alertArpSpoof = v);
+            SettingsService().setAlertArpSpoof(v);
+          },
+        ),
+        _switchTile(
+          title: 'Port-scan attempts detected',
+          value: alertPortScanAttempts,
+          onChanged: (v) {
+            setState(() => alertPortScanAttempts = v);
+            SettingsService().setAlertPortScanAttempts(v);
+          },
+        ),
+        const SizedBox(height: 16),
+        _sectionTitle('Notifications'),
+        _switchTile(
+          title: 'Notify on new device',
+          value: notifyNewDevice,
+          onChanged: (v) {
+            setState(() => notifyNewDevice = v);
+            SettingsService().setNotifyNewDevice(v);
+          },
+        ),
+        _switchTile(
+          title: 'Notify on unknown / untrusted device',
+          value: notifyUnknownDevice,
+          onChanged: (v) {
+            setState(() => notifyUnknownDevice = v);
+            SettingsService().setNotifyUnknownDevice(v);
+          },
+        ),
+        _switchTile(
+          title: 'Notify on router vulnerability',
+          value: notifyRouterVuln,
+          onChanged: (v) {
+            setState(() => notifyRouterVuln = v);
+            SettingsService().setNotifyRouterVuln(v);
+          },
+        ),
+        _switchTile(
+          title: 'Notify on IoT warning',
+          value: notifyIotWarning,
+          onChanged: (v) {
+            setState(() => notifyIotWarning = v);
+            SettingsService().setNotifyIotWarning(v);
+          },
+        ),
+        _switchTile(
+          title: 'Notify on HIGH-risk findings',
+          value: notifyHighRisk,
+          onChanged: (v) {
+            setState(() => notifyHighRisk = v);
+            SettingsService().setNotifyHighRisk(v);
+          },
+        ),
+        _switchTile(
+          title: 'Notify when scan completes',
+          value: notifyScanCompleted,
+          onChanged: (v) {
+            setState(() => notifyScanCompleted = v);
+            SettingsService().setNotifyScanCompleted(v);
+          },
+        ),
+        _switchTile(
+          title: 'Notify on scheduled auto-scan results',
+          value: notifyAutoScanResults,
+          onChanged: (v) {
+            setState(() => notifyAutoScanResults = v);
+            SettingsService().setNotifyAutoScanResults(v);
+          },
+        ),
+        const SizedBox(height: 16),
+        _sectionTitle('Alert style'),
+        _switchTile(
+          title: 'Sound',
+          value: alertSoundEnabled,
+          onChanged: (v) {
+            setState(() => alertSoundEnabled = v);
+            SettingsService().setAlertSoundEnabled(v);
+          },
+        ),
+        _switchTile(
+          title: 'Vibration / haptic feedback',
+          value: alertVibrationEnabled,
+          onChanged: (v) {
+            setState(() => alertVibrationEnabled = v);
+            SettingsService().setAlertVibrationEnabled(v);
+          },
+        ),
+        _switchTile(
+          title: 'Silent mode',
+          subtitle: 'Mute sound and vibration but keep in-app banners.',
+          value: alertSilentMode,
+          onChanged: (v) {
+            setState(() => alertSilentMode = v);
+            SettingsService().setAlertSilentMode(v);
+          },
+        ),
+        const SizedBox(height: 8),
+        ListTile(
+          title: const Text('Alert sensitivity'),
+          subtitle: Text(_alertSensitivityLabel(alertSensitivity)),
+        ),
+        Slider(
+          value: alertSensitivity,
+          min: 0,
+          max: 2,
+          divisions: 2,
+          label: _alertSensitivityLabel(alertSensitivity),
+          onChanged: (v) {
+            setState(() => alertSensitivity = v);
+            SettingsService().setAlertSensitivity(v.round());
+          },
+        ),
+      ],
+    );
+  }
+
+  String _alertSensitivityLabel(double value) {
+    if (value <= 0.25) return 'Low (only critical alerts)';
+    if (value >= 1.75) return 'Aggressive (more noise, more detail)';
+    return 'Normal';
+  }
+
+  // ------------- TAB 4: APP & PRIVACY -------------
+
+  Widget _buildAppPrivacyTab(ThemeData theme) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        _sectionTitle('Account & security'),
+        _switchTile(
+          title: 'Two-factor authentication',
+          subtitle: 'Require an extra step when logging into SCAN-X Cloud.',
+          value: twoFactorEnabled,
+          onChanged: (v) {
+            setState(() => twoFactorEnabled = v);
+            SettingsService().setTwoFactorEnabled(v);
+          },
+        ),
+        const SizedBox(height: 16),
+        _sectionTitle('Appearance'),
+        ListTile(
+          title: const Text('Theme'),
+          subtitle: Text(_themeLabel(appTheme)),
+        ),
+        Column(
+          children: [
+            RadioListTile<int>(
+              title: const Text('System default'),
+              value: 0,
+              groupValue: appTheme,
+              onChanged: (v) {
+                if (v == null) return;
+                setState(() => appTheme = v);
+                SettingsService().setAppThemeIndex(v);
+              },
+            ),
+            RadioListTile<int>(
+              title: const Text('Light'),
+              value: 1,
+              groupValue: appTheme,
+              onChanged: (v) {
+                if (v == null) return;
+                setState(() => appTheme = v);
+                SettingsService().setAppThemeIndex(v);
+              },
+            ),
+            RadioListTile<int>(
+              title: const Text('Dark'),
+              value: 2,
+              groupValue: appTheme,
+              onChanged: (v) {
+                if (v == null) return;
+                setState(() => appTheme = v);
+                SettingsService().setAppThemeIndex(v);
+              },
+            ),
+            RadioListTile<int>(
+              title: const Text('SCAN-X Dark (recommended)'),
+              value: 3,
+              groupValue: appTheme,
+              onChanged: (v) {
+                if (v == null) return;
+                setState(() => appTheme = v);
+                SettingsService().setAppThemeIndex(v);
+              },
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        _sectionTitle('Performance & behaviour'),
+        _switchTile(
+          title: 'Start with Windows / system boot',
+          value: autoStartOnBoot,
+          onChanged: (v) {
+            setState(() => autoStartOnBoot = v);
+            SettingsService().setAutoStartOnBoot(v);
+          },
+        ),
+        _switchTile(
+          title: 'Auto-scan when app launches',
+          value: autoScanOnLaunch,
+          onChanged: (v) {
+            setState(() => autoScanOnLaunch = v);
+            SettingsService().setAutoScanOnLaunch(v);
+          },
+        ),
+        _switchTile(
+          title: 'Keep screen awake during scans',
+          value: keepScreenAwake,
+          onChanged: (v) {
+            setState(() => keepScreenAwake = v);
+            SettingsService().setKeepScreenAwake(v);
+          },
+        ),
+        ListTile(
+          title: const Text('Performance mode'),
+          subtitle: Text(_performanceLabel(performanceMode)),
+        ),
+        Column(
+          children: [
+            RadioListTile<int>(
+              title: const Text('Battery saver'),
+              value: 0,
+              groupValue: performanceMode,
+              onChanged: (v) {
+                if (v == null) return;
+                setState(() => performanceMode = v);
+                SettingsService().setPerformanceMode(v);
+              },
+            ),
+            RadioListTile<int>(
+              title: const Text('Balanced'),
+              value: 1,
+              groupValue: performanceMode,
+              onChanged: (v) {
+                if (v == null) return;
+                setState(() => performanceMode = v);
+                SettingsService().setPerformanceMode(v);
+              },
+            ),
+            RadioListTile<int>(
+              title: const Text('Performance'),
+              value: 2,
+              groupValue: performanceMode,
+              onChanged: (v) {
+                if (v == null) return;
+                setState(() => performanceMode = v);
+                SettingsService().setPerformanceMode(v);
+              },
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        _sectionTitle('Privacy & data'),
+        _switchTile(
+          title: 'Anonymous usage analytics',
+          subtitle: 'Help improve SCAN-X by sending anonymised stats.',
+          value: anonymousUsageAnalytics,
+          onChanged: (v) {
+            setState(() => anonymousUsageAnalytics = v);
+            SettingsService().setAnonymousUsageAnalytics(v);
+          },
+        ),
+        ListTile(
+          title: const Text('Log retention'),
+          subtitle: Text('$logRetentionDays days'),
+        ),
+        Slider(
+          value: logRetentionDays.toDouble(),
+          min: 7,
+          max: 365,
+          divisions: (365 - 7),
+          label: '$logRetentionDays days',
+          onChanged: (v) {
+            final days = v.round();
+            setState(() => logRetentionDays = days);
+            SettingsService().setLogRetentionDays(days);
+          },
+        ),
+        const SizedBox(height: 16),
+        _sectionTitle('Updates'),
+        _switchTile(
+          title: 'Auto update app',
+          value: autoUpdateApp,
+          onChanged: (v) {
+            setState(() => autoUpdateApp = v);
+            SettingsService().setAutoUpdateApp(v);
+          },
+        ),
+        _switchTile(
+          title: 'Ask before installing updates',
+          value: notifyBeforeUpdate,
+          onChanged: (v) {
+            setState(() => notifyBeforeUpdate = v);
+            SettingsService().setNotifyBeforeUpdate(v);
+          },
+        ),
+        _switchTile(
+          title: 'Enable beta / early access builds',
+          value: betaUpdates,
+          onChanged: (v) {
+            setState(() => betaUpdates = v);
+            SettingsService().setBetaUpdates(v);
+          },
+        ),
+      ],
+    );
+  }
+
+  String _themeLabel(int value) {
+    switch (value) {
+      case 1:
+        return 'Light';
+      case 2:
+        return 'Dark';
+      case 3:
+        return 'SCAN-X Dark';
+      default:
+        return 'System default';
+    }
+  }
+
+  String _performanceLabel(int value) {
+    switch (value) {
+      case 0:
+        return 'Battery saver';
+      case 2:
+        return 'Performance';
+      default:
+        return 'Balanced';
+    }
+  }
+
+  // ------------- TAB 5: AI & LABS -------------
+
+  Widget _buildAiLabsTab(ThemeData theme) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        _sectionTitle('AI assistant'),
+        _switchTile(
+          title: 'SCAN-X AI assistant',
+          subtitle: 'Explain findings and suggest actions in plain language.',
+          value: aiAssistantEnabled,
+          onChanged: (v) {
+            setState(() => aiAssistantEnabled = v);
+            SettingsService().setAiAssistantEnabled(v);
+          },
+        ),
+        _switchTile(
+          title: 'Explain vulnerabilities',
+          subtitle: 'Show â€œwhat this meansâ€ cards for each issue.',
+          value: aiExplainVuln,
+          onChanged: (v) {
+            setState(() => aiExplainVuln = v);
+            SettingsService().setAiExplainVuln(v);
+          },
+        ),
+        _switchTile(
+          title: 'One-click fixes (where safe)',
+          subtitle: 'Provide guided / automated fixes for common issues.',
+          value: aiOneClickFix,
+          onChanged: (v) {
+            setState(() => aiOneClickFix = v);
+            SettingsService().setAiOneClickFix(v);
+          },
+        ),
+        _switchTile(
+          title: 'AI-driven risk scoring',
+          subtitle: 'Smarter overall network health score.',
+          value: aiRiskScoring,
+          onChanged: (v) {
+            setState(() => aiRiskScoring = v);
+            SettingsService().setAiRiskScoring(v);
+          },
+        ),
+        _switchTile(
+          title: 'Router hardening playbooks',
+          subtitle: 'Generate router-specific lock-down checklists.',
+          value: aiRouterHardening,
+          onChanged: (v) {
+            setState(() => aiRouterHardening = v);
+            SettingsService().setAiRouterHardening(v);
+          },
+        ),
+        _switchTile(
+          title: 'Detect unnecessary services',
+          subtitle: 'Suggest disabling rarely used but risky services.',
+          value: aiDetectUnnecessaryServices,
+          onChanged: (v) {
+            setState(() => aiDetectUnnecessaryServices = v);
+            SettingsService().setAiDetectUnnecessaryServices(v);
+          },
+        ),
+        _switchTile(
+          title: 'Proactive warnings',
+          subtitle: 'Pre-emptively warn before things become high-risk.',
+          value: aiProactiveWarnings,
+          onChanged: (v) {
+            setState(() => aiProactiveWarnings = v);
+            SettingsService().setAiProactiveWarnings(v);
+          },
+        ),
+        const SizedBox(height: 16),
+        _sectionTitle('Labs: traffic & Wi-Fi'),
+        _switchTile(
+          title: 'Packet sniffer (lite)',
+          subtitle: 'Basic metadata capture for troubleshooting only.',
+          value: packetSnifferLite,
+          onChanged: (v) {
+            setState(() => packetSnifferLite = v);
+            SettingsService().setPacketSnifferLite(v);
+          },
+        ),
+        _switchTile(
+          title: 'Wi-Fi deauth detection',
+          subtitle: 'Detect suspicious de-authentication activity.',
+          value: wifiDeauthDetection,
+          onChanged: (v) {
+            setState(() => wifiDeauthDetection = v);
+            SettingsService().setWifiDeauthDetection(v);
+          },
+        ),
+        _switchTile(
+          title: 'Rogue AP detection',
+          subtitle: 'Alert if a fake access point mimics your SSID.',
+          value: rogueApDetection,
+          onChanged: (v) {
+            setState(() => rogueApDetection = v);
+            SettingsService().setRogueApDetection(v);
+          },
+        ),
+        _switchTile(
+          title: 'Hidden SSID detection',
+          subtitle: 'Flag hidden networks near you (experimental).',
+          value: hiddenSsidDetection,
+          onChanged: (v) {
+            setState(() => hiddenSsidDetection = v);
+            SettingsService().setHiddenSsidDetection(v);
+          },
+        ),
+        const SizedBox(height: 16),
+        _sectionTitle('Experimental ML features'),
+        _switchTile(
+          title: 'Behaviour-based threat detection (beta)',
+          value: betaBehaviourThreatDetection,
+          onChanged: (v) {
+            setState(() => betaBehaviourThreatDetection = v);
+            SettingsService().setBetaBehaviourThreatDetection(v);
+          },
+        ),
+        _switchTile(
+          title: 'Local ML profiling (beta)',
+          value: betaLocalMlProfiling,
+          onChanged: (v) {
+            setState(() => betaLocalMlProfiling = v);
+            SettingsService().setBetaLocalMlProfiling(v);
+          },
+        ),
+        _switchTile(
+          title: 'IoT fingerprinting (beta)',
+          value: betaIotFingerprinting,
+          onChanged: (v) {
+            setState(() => betaIotFingerprinting = v);
+            SettingsService().setBetaIotFingerprinting(v);
+          },
+        ),
+      ],
+    );
+  }
+
+  // ------------- HELPERS -------------
+
+  Widget _sectionTitle(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 14,
+        ),
+      ),
+    );
+  }
+
+  Widget _switchTile({
+    required String title,
+    String? subtitle,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return SwitchListTile(
+      title: Text(title),
+      subtitle: subtitle != null ? Text(subtitle) : null,
+      value: value,
+      onChanged: onChanged,
+      dense: false,
+    );
+  }
+}
+
+
+============================================================
+FILE: lib\features\dashboard\dashboard_screen.dart
+PATH: C:\Users\Acer\scanx\scanx_app\lib\features\dashboard\dashboard_screen.dart
+============================================================
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+
+import '../../core/services/scan_service.dart';
+import '../../core/services/settings_service.dart';
+
+class DashboardScreen extends StatefulWidget {
+  const DashboardScreen({super.key});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  bool _isScanning = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final result = ScanService().lastResult;
+
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'SCAN-X Dashboard',
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 18),
+
+              // Network health
+              _card(
+                context,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.shield_outlined,
+                        color: theme.colorScheme.primary),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Network health',
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              color: theme.colorScheme.onSurface,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            result == null
+                                ? 'No scans yet. Run a Quick Smart Scan to get your first health score.'
+                                : 'Your network health score is based on open ports and risk signals from your last scan.',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurface,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      result == null ? 'No data' : '${_healthScore(result)}%',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Quick actions
+              _card(
+                context,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Quick actions',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      height: 46,
+                      child: FilledButton.icon(
+                        onPressed: _isScanning ? null : _runQuickSmartScan,
+                        icon: _isScanning
+                            ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                            : const Icon(Icons.flash_on),
+                        label: Text(_isScanning
+                            ? 'Scanning...'
+                            : 'Quick Smart Scan'),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Uses your default target from Settings (e.g. 192.168.1.0/24). You can inspect details in the Scan and Devices tabs.',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              Expanded(
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _card(
+                        context,
+                        child: _statTile(
+                          context,
+                          title: 'Devices found',
+                          value: result?.hosts.length.toString() ?? '0',
+                          icon: Icons.devices_other,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _card(
+                        context,
+                        child: _statTile(
+                          context,
+                          title: 'Last target',
+                          value: result?.target ?? _safeDefaultTargetPreview(),
+                          icon: Icons.router,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _safeDefaultTargetPreview() {
+    try {
+      final s = SettingsService().settings;
+      return s.defaultTargetCidr;
+    } catch (_) {
+      return '192.168.1.0/24';
+    }
+  }
+
+  int _healthScore(ScanResult r) {
+    if (r.hosts.isEmpty) return 100;
+    int score = 100;
+
+    for (final h in r.hosts) {
+      if (h.risk == RiskLevel.high) score -= 15;
+      if (h.risk == RiskLevel.medium) score -= 7;
+      if (h.openPorts.length > 10) score -= 5;
+    }
+
+    if (score < 0) score = 0;
+    if (score > 100) score = 100;
+    return score;
+  }
+
+  Future<void> _runQuickSmartScan() async {
+    if (_isScanning) return;
+    setState(() => _isScanning = true);
+
+    if (mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const _ScanProgressDialog(),
+      );
+    }
+
+    try {
+      // Use the ScanService helper so Dashboard does NOT depend on a specific settings field name.
+      await ScanService()
+          .runQuickSmartScanFromDefaults()
+          .timeout(const Duration(minutes: 4));
+
+      if (mounted) Navigator.of(context).pop();
+      if (mounted) {
+        final target = ScanService().lastResult?.target ?? 'target';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Scan complete. Found devices for $target.')),
+        );
+      }
+      if (mounted) setState(() {});
+    } on TimeoutException {
+      if (mounted) Navigator.of(context).pop();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Scan timed out. Try Performance mode or a smaller CIDR (e.g. /25 or /26).',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) Navigator.of(context).pop();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Scan failed: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isScanning = false);
+    }
+  }
+
+  Widget _card(BuildContext context, {required Widget child}) {
+    final theme = Theme.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.cardTheme.color ?? theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: theme.dividerColor.withOpacity(0.35),
+        ),
+      ),
+      child: child,
+    );
+  }
+
+  Widget _statTile(BuildContext context,
+      {required String title, required String value, required IconData icon}) {
+    final theme = Theme.of(context);
+    return Row(
+      children: [
+        Icon(icon, color: theme.colorScheme.primary),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: theme.colorScheme.onSurface,
+                    fontWeight: FontWeight.w700,
+                  )),
+              const SizedBox(height: 4),
+              Text(value,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: theme.colorScheme.onSurface,
+                    fontWeight: FontWeight.w800,
+                  )),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ScanProgressDialog extends StatelessWidget {
+  const _ScanProgressDialog();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: SizedBox(
+          width: 440,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Scanningâ€¦',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Quick Smart Scan running.',
+                style: theme.textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 14),
+              const LinearProgressIndicator(),
+              const SizedBox(height: 10),
+              Text(
+                'This can take a couple of minutes depending on network size.',
+                style: theme.textTheme.bodySmall,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+============================================================
+FILE: lib\features\devices\devices_screen.dart
+PATH: C:\Users\Acer\scanx\scanx_app\lib\features\devices\devices_screen.dart
+============================================================
+import 'package:flutter/material.dart';
+import 'package:scanx_app/core/services/services.dart';
+
+import 'package:scanx_app/features/router/router_iot_card.dart';
+import 'package:scanx_app/features/router/router_iot_security.dart';
+
+import 'device_details_screen.dart';
+
+class DevicesScreen extends StatelessWidget {
+  const DevicesScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final result = ScanService().lastResult;
+
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Devices',
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  color: cs.onSurface,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                result == null
+                    ? 'Run a Smart or Full Scan to discover devices on your network.'
+                    : 'Showing devices from the last scan.',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: cs.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 24),
+              if (result == null)
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      'No scan results.\nGo to the Scan tab and run a scan.',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: cs.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                )
+              else
+                Expanded(
+                  child: Column(
+                    children: [
+                      RouterIotCard(
+                        scanService: ScanService(),
+                        securityService: RouterIotSecurityService(),
+                      ),
+                      const SizedBox(height: 12),
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: result.hosts.length,
+                          itemBuilder: (context, index) {
+                            final host = result.hosts[index];
+                            final openPorts = host.openPorts;
+                            final risk = host.risk;
+
+                            final title = host.hostname ?? host.ip;
+
+                            final subtitle = host.hostname == null
+                                ? 'IP: ${host.ip}'
+                                : 'IP: ${host.ip} - Hostname resolved';
+
+                            return InkWell(
+                              onTap: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => DeviceDetailsScreen(host: host),
+                                  ),
+                                );
+                              },
+                              borderRadius: BorderRadius.circular(16),
+                              child: Container(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                decoration: BoxDecoration(
+                                  color: cs.surface,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: cs.outlineVariant.withOpacity(0.6),
+                                  ),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 14,
+                                ),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Icon(
+                                      Icons.devices_other,
+                                      color: cs.primary,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Expanded(
+                                                child: Text(
+                                                  title,
+                                                  style: theme.textTheme.titleMedium?.copyWith(
+                                                    color: cs.onSurface,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              _buildRiskChip(context, risk),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            subtitle,
+                                            style: theme.textTheme.bodySmall?.copyWith(
+                                              color: cs.onSurfaceVariant,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            openPorts.isEmpty
+                                                ? 'No open ports detected.'
+                                                : '${openPorts.length} open port(s): '
+                                                '${openPorts.take(3).map((p) => '${p.port}/${p.protocol}').join(', ')}'
+                                                '${openPorts.length > 3 ? '...' : ''}',
+                                            style: theme.textTheme.bodySmall?.copyWith(
+                                              color: cs.onSurfaceVariant,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRiskChip(BuildContext context, RiskLevel risk) {
+    final cs = Theme.of(context).colorScheme;
+    final label = _riskLabel(risk);
+    final fg = _riskColor(risk);
+    final bg = fg.withOpacity(0.12);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: fg.withOpacity(0.5)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11,
+          color: fg,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  String _riskLabel(RiskLevel risk) {
+    switch (risk) {
+      case RiskLevel.high:
+        return 'High risk';
+      case RiskLevel.medium:
+        return 'Medium risk';
+      case RiskLevel.low:
+      default:
+        return 'Low risk';
+    }
+  }
+
+  Color _riskColor(RiskLevel risk) {
+    switch (risk) {
+      case RiskLevel.high:
+        return const Color(0xFFFF5252);
+      case RiskLevel.medium:
+        return const Color(0xFFFFC107);
+      case RiskLevel.low:
+      default:
+        return const Color(0xFF1ECB7B);
+    }
+  }
+}
+
+
+============================================================
+FILE: lib\features\devices\device_details_screen.dart
+PATH: C:\Users\Acer\scanx\scanx_app\lib\features\devices\device_details_screen.dart
+============================================================
+import 'package:flutter/material.dart';
+import '../../core/services/scan_service.dart';
+
+class DeviceDetailsScreen extends StatelessWidget {
+  final DetectedHost host;
+
+  const DeviceDetailsScreen({
+    super.key,
+    required this.host,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final ports = host.openPorts;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(host.hostname ?? host.ip),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeader(context),
+            const SizedBox(height: 16),
+            Text(
+              'Open ports',
+              style: theme.textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            if (ports.isEmpty)
+              const Text(
+                'No open ports detected on this device in the last scan.',
+              )
+            else
+              Expanded(
+                child: ListView.separated(
+                  itemCount: ports.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final p = ports[index];
+                    return ListTile(
+                      dense: true,
+                      title: Text('${p.port}/${p.protocol}'),
+                      subtitle: Text(p.serviceName),
+                    );
+                  },
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: cs.outlineVariant.withOpacity(0.6)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  host.hostname ?? host.ip,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: cs.onSurface,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              _buildRiskChip(context, host.risk),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'IP: ${host.ip}',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: cs.onSurfaceVariant,
+            ),
+          ),
+          if (host.hostname != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              'Hostname resolved',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: cs.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRiskChip(BuildContext context, RiskLevel risk) {
+    final label = _riskLabel(risk);
+    final color = _riskColor(risk);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.16),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withOpacity(0.7)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  String _riskLabel(RiskLevel risk) {
+    switch (risk) {
+      case RiskLevel.high:
+        return 'High risk';
+      case RiskLevel.medium:
+        return 'Medium risk';
+      case RiskLevel.low:
+        return 'Low risk';
+    }
+  }
+
+  Color _riskColor(RiskLevel risk) {
+    switch (risk) {
+      case RiskLevel.high:
+        return const Color(0xFFFF5252);
+      case RiskLevel.medium:
+        return const Color(0xFFFFC107);
+      case RiskLevel.low:
+        return const Color(0xFF1ECB7B);
+    }
+  }
+}
+
+
+============================================================
+FILE: lib\core\services\settings_service.dart
+PATH: C:\Users\Acer\scanx\scanx_app\lib\core\services\settings_service.dart
+============================================================
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+/// Minimal settings model used by screens (scan target default).
+class ScanXSettings {
+  final String defaultTargetCidr;
+
+  const ScanXSettings({
+    required this.defaultTargetCidr,
+  });
+
+  ScanXSettings copyWith({
+    String? defaultTargetCidr,
+  }) {
+    return ScanXSettings(
+      defaultTargetCidr: defaultTargetCidr ?? this.defaultTargetCidr,
+    );
+  }
+}
+
+/// Singleton settings service.
+/// - Persists to SharedPreferences
+/// - Exposes instant theme switching via ValueListenable<ThemeMode>
+/// - Matches every getter/setter used by SettingsScreen
+class SettingsService {
+  SettingsService._internal();
+  static SettingsService? _instance;
+
+  factory SettingsService() => _instance ??= SettingsService._internal();
+  static SettingsService get instance => SettingsService();
+
+  static late SharedPreferences _prefs;
+  static bool _ready = false;
+
+  /// Call once in main() before runApp().
+  static Future<SettingsService> init() async {
+    if (_ready) return SettingsService();
+    _prefs = await SharedPreferences.getInstance();
+    _ready = true;
+    SettingsService()._loadFromPrefs();
+    return SettingsService();
+  }
+
+  // ---- Change notifications (for UI that wants to rebuild) ----
+  final ValueNotifier<ThemeMode> _themeModeNotifier =
+  ValueNotifier<ThemeMode>(ThemeMode.system);
+
+  ValueListenable<ThemeMode> get themeModeListenable => _themeModeNotifier;
+
+  // Optional: general “settings changed” notifier if you need it later.
+  final ValueNotifier<int> _settingsVersion = ValueNotifier<int>(0);
+  ValueListenable<int> get settingsVersionListenable => _settingsVersion;
+
+  void _bump() {
+    _settingsVersion.value++;
+  }
+
+  // ---- Core settings object (for scan screen defaults) ----
+  ScanXSettings _settings = const ScanXSettings(defaultTargetCidr: '192.168.1.0/24');
+  ScanXSettings get settings => _settings;
+
+  // ------------------------
+  // Scan & detection
+  // ------------------------
+  bool quickScan = true;
+  bool deepScan = false;
+  bool stealthScan = false;
+  bool continuousMonitoring = false;
+  int scanFrequency = 0; // 0 manual, 1 hourly, 2 6-hour, 3 daily
+  int hostsPerScan = 256;
+
+  // ------------------------
+  // Router & IoT
+  // ------------------------
+  bool routerWeakPassword = true;
+  bool routerOpenPorts = true;
+  bool routerOutdatedFirmware = true;
+  bool routerUpnpCheck = true;
+  bool routerWpsCheck = true;
+  bool routerDnsHijack = true;
+
+  bool iotOutdatedFirmware = true;
+  bool iotDefaultPasswords = true;
+  bool iotVulnDbMatch = true;
+  bool iotAutoRecommendations = true;
+
+  // ------------------------
+  // Alerts (engine level)
+  // ------------------------
+  bool alertNewDevice = true;
+  bool alertMacChange = true;
+  bool alertArpSpoof = true;
+  bool alertPortScanAttempts = true;
+
+  // ------------------------
+  // Notifications (user-facing)
+  // ------------------------
+  bool notifyNewDevice = false;
+  bool notifyUnknownDevice = false;
+  bool notifyRouterVuln = false;
+  bool notifyIotWarning = false;
+  bool notifyHighRisk = true;
+  bool notifyScanCompleted = true;
+  bool notifyAutoScanResults = true;
+
+  // ------------------------
+  // Alert style
+  // ------------------------
+  bool alertSoundEnabled = true;
+  bool alertVibrationEnabled = true;
+  bool alertSilentMode = false;
+  int alertSensitivity = 1; // 0 low, 1 normal, 2 aggressive
+
+  // ------------------------
+  // App & privacy
+  // ------------------------
+  bool twoFactorEnabled = true;
+  int appThemeIndex = 3; // 0 system, 1 light, 2 dark, 3 scanx dark
+  int appLanguageIndex = 0;
+
+  int logRetentionDays = 30;
+  bool anonymousUsageAnalytics = false;
+  int performanceMode = 1; // 0 battery, 1 balanced, 2 performance
+
+  bool autoStartOnBoot = false;
+  bool autoScanOnLaunch = false;
+  bool keepScreenAwake = false;
+
+  bool autoUpdateApp = true;
+  bool notifyBeforeUpdate = true;
+  bool betaUpdates = false;
+
+  // ------------------------
+  // AI & labs
+  // ------------------------
+  bool aiAssistantEnabled = true;
+  bool aiExplainVuln = true;
+  bool aiOneClickFix = true;
+  bool aiRiskScoring = true;
+  bool aiRouterHardening = false;
+  bool aiDetectUnnecessaryServices = false;
+  bool aiProactiveWarnings = false;
+
+  bool packetSnifferLite = false;
+  bool wifiDeauthDetection = false;
+  bool rogueApDetection = false;
+  bool hiddenSsidDetection = false;
+
+  bool betaBehaviourThreatDetection = false;
+  bool betaLocalMlProfiling = false;
+  bool betaIotFingerprinting = false;
+
+  // ------------------------
+  // Pref keys
+  // ------------------------
+  static const _kDefaultTarget = 'defaultTargetCidr';
+
+  static const _kQuickScan = 'quickScan';
+  static const _kDeepScan = 'deepScan';
+  static const _kStealthScan = 'stealthScan';
+  static const _kContinuousMonitoring = 'continuousMonitoring';
+  static const _kScanFrequency = 'scanFrequency';
+  static const _kHostsPerScan = 'hostsPerScan';
+
+  static const _kRouterWeakPassword = 'routerWeakPassword';
+  static const _kRouterOpenPorts = 'routerOpenPorts';
+  static const _kRouterOutdatedFirmware = 'routerOutdatedFirmware';
+  static const _kRouterUpnpCheck = 'routerUpnpCheck';
+  static const _kRouterWpsCheck = 'routerWpsCheck';
+  static const _kRouterDnsHijack = 'routerDnsHijack';
+
+  static const _kIotOutdatedFirmware = 'iotOutdatedFirmware';
+  static const _kIotDefaultPasswords = 'iotDefaultPasswords';
+  static const _kIotVulnDbMatch = 'iotVulnDbMatch';
+  static const _kIotAutoRecommendations = 'iotAutoRecommendations';
+
+  static const _kAlertNewDevice = 'alertNewDevice';
+  static const _kAlertMacChange = 'alertMacChange';
+  static const _kAlertArpSpoof = 'alertArpSpoof';
+  static const _kAlertPortScanAttempts = 'alertPortScanAttempts';
+
+  static const _kNotifyNewDevice = 'notifyNewDevice';
+  static const _kNotifyUnknownDevice = 'notifyUnknownDevice';
+  static const _kNotifyRouterVuln = 'notifyRouterVuln';
+  static const _kNotifyIotWarning = 'notifyIotWarning';
+  static const _kNotifyHighRisk = 'notifyHighRisk';
+  static const _kNotifyScanCompleted = 'notifyScanCompleted';
+  static const _kNotifyAutoScanResults = 'notifyAutoScanResults';
+
+  static const _kAlertSoundEnabled = 'alertSoundEnabled';
+  static const _kAlertVibrationEnabled = 'alertVibrationEnabled';
+  static const _kAlertSilentMode = 'alertSilentMode';
+  static const _kAlertSensitivity = 'alertSensitivity';
+
+  static const _kTwoFactorEnabled = 'twoFactorEnabled';
+  static const _kAppThemeIndex = 'appThemeIndex';
+  static const _kAppLanguageIndex = 'appLanguageIndex';
+
+  static const _kLogRetentionDays = 'logRetentionDays';
+  static const _kAnonymousUsageAnalytics = 'anonymousUsageAnalytics';
+  static const _kPerformanceMode = 'performanceMode';
+
+  static const _kAutoStartOnBoot = 'autoStartOnBoot';
+  static const _kAutoScanOnLaunch = 'autoScanOnLaunch';
+  static const _kKeepScreenAwake = 'keepScreenAwake';
+
+  static const _kAutoUpdateApp = 'autoUpdateApp';
+  static const _kNotifyBeforeUpdate = 'notifyBeforeUpdate';
+  static const _kBetaUpdates = 'betaUpdates';
+
+  static const _kAiAssistantEnabled = 'aiAssistantEnabled';
+  static const _kAiExplainVuln = 'aiExplainVuln';
+  static const _kAiOneClickFix = 'aiOneClickFix';
+  static const _kAiRiskScoring = 'aiRiskScoring';
+  static const _kAiRouterHardening = 'aiRouterHardening';
+  static const _kAiDetectUnnecessaryServices = 'aiDetectUnnecessaryServices';
+  static const _kAiProactiveWarnings = 'aiProactiveWarnings';
+
+  static const _kPacketSnifferLite = 'packetSnifferLite';
+  static const _kWifiDeauthDetection = 'wifiDeauthDetection';
+  static const _kRogueApDetection = 'rogueApDetection';
+  static const _kHiddenSsidDetection = 'hiddenSsidDetection';
+
+  static const _kBetaBehaviourThreatDetection = 'betaBehaviourThreatDetection';
+  static const _kBetaLocalMlProfiling = 'betaLocalMlProfiling';
+  static const _kBetaIotFingerprinting = 'betaIotFingerprinting';
+
+  void _loadFromPrefs() {
+    // Settings object
+    _settings = _settings.copyWith(
+      defaultTargetCidr: _prefs.getString(_kDefaultTarget) ?? _settings.defaultTargetCidr,
+    );
+
+    // Scan & detection
+    quickScan = _prefs.getBool(_kQuickScan) ?? quickScan;
+    deepScan = _prefs.getBool(_kDeepScan) ?? deepScan;
+    stealthScan = _prefs.getBool(_kStealthScan) ?? stealthScan;
+    continuousMonitoring = _prefs.getBool(_kContinuousMonitoring) ?? continuousMonitoring;
+    scanFrequency = _prefs.getInt(_kScanFrequency) ?? scanFrequency;
+    hostsPerScan = _prefs.getInt(_kHostsPerScan) ?? hostsPerScan;
+
+    // Router & IoT
+    routerWeakPassword = _prefs.getBool(_kRouterWeakPassword) ?? routerWeakPassword;
+    routerOpenPorts = _prefs.getBool(_kRouterOpenPorts) ?? routerOpenPorts;
+    routerOutdatedFirmware = _prefs.getBool(_kRouterOutdatedFirmware) ?? routerOutdatedFirmware;
+    routerUpnpCheck = _prefs.getBool(_kRouterUpnpCheck) ?? routerUpnpCheck;
+    routerWpsCheck = _prefs.getBool(_kRouterWpsCheck) ?? routerWpsCheck;
+    routerDnsHijack = _prefs.getBool(_kRouterDnsHijack) ?? routerDnsHijack;
+
+    iotOutdatedFirmware = _prefs.getBool(_kIotOutdatedFirmware) ?? iotOutdatedFirmware;
+    iotDefaultPasswords = _prefs.getBool(_kIotDefaultPasswords) ?? iotDefaultPasswords;
+    iotVulnDbMatch = _prefs.getBool(_kIotVulnDbMatch) ?? iotVulnDbMatch;
+    iotAutoRecommendations = _prefs.getBool(_kIotAutoRecommendations) ?? iotAutoRecommendations;
+
+    // Alerts + notifications
+    alertNewDevice = _prefs.getBool(_kAlertNewDevice) ?? alertNewDevice;
+    alertMacChange = _prefs.getBool(_kAlertMacChange) ?? alertMacChange;
+    alertArpSpoof = _prefs.getBool(_kAlertArpSpoof) ?? alertArpSpoof;
+    alertPortScanAttempts = _prefs.getBool(_kAlertPortScanAttempts) ?? alertPortScanAttempts;
+
+    notifyNewDevice = _prefs.getBool(_kNotifyNewDevice) ?? notifyNewDevice;
+    notifyUnknownDevice = _prefs.getBool(_kNotifyUnknownDevice) ?? notifyUnknownDevice;
+    notifyRouterVuln = _prefs.getBool(_kNotifyRouterVuln) ?? notifyRouterVuln;
+    notifyIotWarning = _prefs.getBool(_kNotifyIotWarning) ?? notifyIotWarning;
+    notifyHighRisk = _prefs.getBool(_kNotifyHighRisk) ?? notifyHighRisk;
+    notifyScanCompleted = _prefs.getBool(_kNotifyScanCompleted) ?? notifyScanCompleted;
+    notifyAutoScanResults = _prefs.getBool(_kNotifyAutoScanResults) ?? notifyAutoScanResults;
+
+    // Alert style
+    alertSoundEnabled = _prefs.getBool(_kAlertSoundEnabled) ?? alertSoundEnabled;
+    alertVibrationEnabled = _prefs.getBool(_kAlertVibrationEnabled) ?? alertVibrationEnabled;
+    alertSilentMode = _prefs.getBool(_kAlertSilentMode) ?? alertSilentMode;
+    alertSensitivity = _prefs.getInt(_kAlertSensitivity) ?? alertSensitivity;
+
+    // App & privacy
+    twoFactorEnabled = _prefs.getBool(_kTwoFactorEnabled) ?? twoFactorEnabled;
+    appThemeIndex = _prefs.getInt(_kAppThemeIndex) ?? appThemeIndex;
+    appLanguageIndex = _prefs.getInt(_kAppLanguageIndex) ?? appLanguageIndex;
+
+    logRetentionDays = _prefs.getInt(_kLogRetentionDays) ?? logRetentionDays;
+    anonymousUsageAnalytics = _prefs.getBool(_kAnonymousUsageAnalytics) ?? anonymousUsageAnalytics;
+    performanceMode = _prefs.getInt(_kPerformanceMode) ?? performanceMode;
+
+    autoStartOnBoot = _prefs.getBool(_kAutoStartOnBoot) ?? autoStartOnBoot;
+    autoScanOnLaunch = _prefs.getBool(_kAutoScanOnLaunch) ?? autoScanOnLaunch;
+    keepScreenAwake = _prefs.getBool(_kKeepScreenAwake) ?? keepScreenAwake;
+
+    autoUpdateApp = _prefs.getBool(_kAutoUpdateApp) ?? autoUpdateApp;
+    notifyBeforeUpdate = _prefs.getBool(_kNotifyBeforeUpdate) ?? notifyBeforeUpdate;
+    betaUpdates = _prefs.getBool(_kBetaUpdates) ?? betaUpdates;
+
+    // AI & labs
+    aiAssistantEnabled = _prefs.getBool(_kAiAssistantEnabled) ?? aiAssistantEnabled;
+    aiExplainVuln = _prefs.getBool(_kAiExplainVuln) ?? aiExplainVuln;
+    aiOneClickFix = _prefs.getBool(_kAiOneClickFix) ?? aiOneClickFix;
+    aiRiskScoring = _prefs.getBool(_kAiRiskScoring) ?? aiRiskScoring;
+    aiRouterHardening = _prefs.getBool(_kAiRouterHardening) ?? aiRouterHardening;
+    aiDetectUnnecessaryServices =
+        _prefs.getBool(_kAiDetectUnnecessaryServices) ?? aiDetectUnnecessaryServices;
+    aiProactiveWarnings = _prefs.getBool(_kAiProactiveWarnings) ?? aiProactiveWarnings;
+
+    packetSnifferLite = _prefs.getBool(_kPacketSnifferLite) ?? packetSnifferLite;
+    wifiDeauthDetection = _prefs.getBool(_kWifiDeauthDetection) ?? wifiDeauthDetection;
+    rogueApDetection = _prefs.getBool(_kRogueApDetection) ?? rogueApDetection;
+    hiddenSsidDetection = _prefs.getBool(_kHiddenSsidDetection) ?? hiddenSsidDetection;
+
+    betaBehaviourThreatDetection =
+        _prefs.getBool(_kBetaBehaviourThreatDetection) ?? betaBehaviourThreatDetection;
+    betaLocalMlProfiling = _prefs.getBool(_kBetaLocalMlProfiling) ?? betaLocalMlProfiling;
+    betaIotFingerprinting = _prefs.getBool(_kBetaIotFingerprinting) ?? betaIotFingerprinting;
+
+    _syncThemeModeNotifier();
+  }
+
+  // ---------- Theme logic ----------
+  void _syncThemeModeNotifier() {
+    switch (appThemeIndex) {
+      case 1:
+        _themeModeNotifier.value = ThemeMode.light;
+        break;
+      case 2:
+      case 3:
+        _themeModeNotifier.value = ThemeMode.dark;
+        break;
+      default:
+        _themeModeNotifier.value = ThemeMode.system;
+    }
+  }
+
+  Future<void> setAppThemeIndex(int v) async {
+    appThemeIndex = v;
+    await _prefs.setInt(_kAppThemeIndex, v);
+    _syncThemeModeNotifier(); // instant UI rebuild
+    _bump();
+  }
+
+  // ---------- Default target ----------
+  Future<void> setDefaultTargetCidr(String cidr) async {
+    _settings = _settings.copyWith(defaultTargetCidr: cidr);
+    await _prefs.setString(_kDefaultTarget, cidr);
+    _bump();
+  }
+
+  // ---------- Scan & detection setters ----------
+  Future<void> setQuickScan(bool v) async { quickScan = v; await _prefs.setBool(_kQuickScan, v); _bump(); }
+  Future<void> setDeepScan(bool v) async { deepScan = v; await _prefs.setBool(_kDeepScan, v); _bump(); }
+  Future<void> setStealthScan(bool v) async { stealthScan = v; await _prefs.setBool(_kStealthScan, v); _bump(); }
+  Future<void> setContinuousMonitoring(bool v) async { continuousMonitoring = v; await _prefs.setBool(_kContinuousMonitoring, v); _bump(); }
+  Future<void> setScanFrequency(int v) async { scanFrequency = v; await _prefs.setInt(_kScanFrequency, v); _bump(); }
+  Future<void> setHostsPerScan(int v) async { hostsPerScan = v; await _prefs.setInt(_kHostsPerScan, v); _bump(); }
+
+  // ---------- Router & IoT setters ----------
+  Future<void> setRouterWeakPassword(bool v) async { routerWeakPassword = v; await _prefs.setBool(_kRouterWeakPassword, v); _bump(); }
+  Future<void> setRouterOpenPorts(bool v) async { routerOpenPorts = v; await _prefs.setBool(_kRouterOpenPorts, v); _bump(); }
+  Future<void> setRouterOutdatedFirmware(bool v) async { routerOutdatedFirmware = v; await _prefs.setBool(_kRouterOutdatedFirmware, v); _bump(); }
+  Future<void> setRouterUpnpCheck(bool v) async { routerUpnpCheck = v; await _prefs.setBool(_kRouterUpnpCheck, v); _bump(); }
+  Future<void> setRouterWpsCheck(bool v) async { routerWpsCheck = v; await _prefs.setBool(_kRouterWpsCheck, v); _bump(); }
+  Future<void> setRouterDnsHijack(bool v) async { routerDnsHijack = v; await _prefs.setBool(_kRouterDnsHijack, v); _bump(); }
+
+  Future<void> setIotOutdatedFirmware(bool v) async { iotOutdatedFirmware = v; await _prefs.setBool(_kIotOutdatedFirmware, v); _bump(); }
+  Future<void> setIotDefaultPasswords(bool v) async { iotDefaultPasswords = v; await _prefs.setBool(_kIotDefaultPasswords, v); _bump(); }
+  Future<void> setIotVulnDbMatch(bool v) async { iotVulnDbMatch = v; await _prefs.setBool(_kIotVulnDbMatch, v); _bump(); }
+  Future<void> setIotAutoRecommendations(bool v) async { iotAutoRecommendations = v; await _prefs.setBool(_kIotAutoRecommendations, v); _bump(); }
+
+  // ---------- Alerts setters ----------
+  Future<void> setAlertNewDevice(bool v) async { alertNewDevice = v; await _prefs.setBool(_kAlertNewDevice, v); _bump(); }
+  Future<void> setAlertMacChange(bool v) async { alertMacChange = v; await _prefs.setBool(_kAlertMacChange, v); _bump(); }
+  Future<void> setAlertArpSpoof(bool v) async { alertArpSpoof = v; await _prefs.setBool(_kAlertArpSpoof, v); _bump(); }
+  Future<void> setAlertPortScanAttempts(bool v) async { alertPortScanAttempts = v; await _prefs.setBool(_kAlertPortScanAttempts, v); _bump(); }
+
+  // ---------- Notification setters ----------
+  Future<void> setNotifyNewDevice(bool v) async { notifyNewDevice = v; await _prefs.setBool(_kNotifyNewDevice, v); _bump(); }
+  Future<void> setNotifyUnknownDevice(bool v) async { notifyUnknownDevice = v; await _prefs.setBool(_kNotifyUnknownDevice, v); _bump(); }
+  Future<void> setNotifyRouterVuln(bool v) async { notifyRouterVuln = v; await _prefs.setBool(_kNotifyRouterVuln, v); _bump(); }
+  Future<void> setNotifyIotWarning(bool v) async { notifyIotWarning = v; await _prefs.setBool(_kNotifyIotWarning, v); _bump(); }
+  Future<void> setNotifyHighRisk(bool v) async { notifyHighRisk = v; await _prefs.setBool(_kNotifyHighRisk, v); _bump(); }
+  Future<void> setNotifyScanCompleted(bool v) async { notifyScanCompleted = v; await _prefs.setBool(_kNotifyScanCompleted, v); _bump(); }
+  Future<void> setNotifyAutoScanResults(bool v) async { notifyAutoScanResults = v; await _prefs.setBool(_kNotifyAutoScanResults, v); _bump(); }
+
+  // ---------- Alert style setters ----------
+  Future<void> setAlertSoundEnabled(bool v) async { alertSoundEnabled = v; await _prefs.setBool(_kAlertSoundEnabled, v); _bump(); }
+  Future<void> setAlertVibrationEnabled(bool v) async { alertVibrationEnabled = v; await _prefs.setBool(_kAlertVibrationEnabled, v); _bump(); }
+  Future<void> setAlertSilentMode(bool v) async { alertSilentMode = v; await _prefs.setBool(_kAlertSilentMode, v); _bump(); }
+  Future<void> setAlertSensitivity(int v) async { alertSensitivity = v; await _prefs.setInt(_kAlertSensitivity, v); _bump(); }
+
+  // ---------- App/privacy setters ----------
+  Future<void> setTwoFactorEnabled(bool v) async { twoFactorEnabled = v; await _prefs.setBool(_kTwoFactorEnabled, v); _bump(); }
+  Future<void> setAppLanguageIndex(int v) async { appLanguageIndex = v; await _prefs.setInt(_kAppLanguageIndex, v); _bump(); }
+  Future<void> setLogRetentionDays(int v) async { logRetentionDays = v; await _prefs.setInt(_kLogRetentionDays, v); _bump(); }
+  Future<void> setAnonymousUsageAnalytics(bool v) async { anonymousUsageAnalytics = v; await _prefs.setBool(_kAnonymousUsageAnalytics, v); _bump(); }
+  Future<void> setPerformanceMode(int v) async { performanceMode = v; await _prefs.setInt(_kPerformanceMode, v); _bump(); }
+
+  Future<void> setAutoStartOnBoot(bool v) async { autoStartOnBoot = v; await _prefs.setBool(_kAutoStartOnBoot, v); _bump(); }
+  Future<void> setAutoScanOnLaunch(bool v) async { autoScanOnLaunch = v; await _prefs.setBool(_kAutoScanOnLaunch, v); _bump(); }
+  Future<void> setKeepScreenAwake(bool v) async { keepScreenAwake = v; await _prefs.setBool(_kKeepScreenAwake, v); _bump(); }
+
+  Future<void> setAutoUpdateApp(bool v) async { autoUpdateApp = v; await _prefs.setBool(_kAutoUpdateApp, v); _bump(); }
+  Future<void> setNotifyBeforeUpdate(bool v) async { notifyBeforeUpdate = v; await _prefs.setBool(_kNotifyBeforeUpdate, v); _bump(); }
+  Future<void> setBetaUpdates(bool v) async { betaUpdates = v; await _prefs.setBool(_kBetaUpdates, v); _bump(); }
+
+  // ---------- AI & labs setters ----------
+  Future<void> setAiAssistantEnabled(bool v) async { aiAssistantEnabled = v; await _prefs.setBool(_kAiAssistantEnabled, v); _bump(); }
+  Future<void> setAiExplainVuln(bool v) async { aiExplainVuln = v; await _prefs.setBool(_kAiExplainVuln, v); _bump(); }
+  Future<void> setAiOneClickFix(bool v) async { aiOneClickFix = v; await _prefs.setBool(_kAiOneClickFix, v); _bump(); }
+  Future<void> setAiRiskScoring(bool v) async { aiRiskScoring = v; await _prefs.setBool(_kAiRiskScoring, v); _bump(); }
+  Future<void> setAiRouterHardening(bool v) async { aiRouterHardening = v; await _prefs.setBool(_kAiRouterHardening, v); _bump(); }
+  Future<void> setAiDetectUnnecessaryServices(bool v) async { aiDetectUnnecessaryServices = v; await _prefs.setBool(_kAiDetectUnnecessaryServices, v); _bump(); }
+  Future<void> setAiProactiveWarnings(bool v) async { aiProactiveWarnings = v; await _prefs.setBool(_kAiProactiveWarnings, v); _bump(); }
+
+  Future<void> setPacketSnifferLite(bool v) async { packetSnifferLite = v; await _prefs.setBool(_kPacketSnifferLite, v); _bump(); }
+  Future<void> setWifiDeauthDetection(bool v) async { wifiDeauthDetection = v; await _prefs.setBool(_kWifiDeauthDetection, v); _bump(); }
+  Future<void> setRogueApDetection(bool v) async { rogueApDetection = v; await _prefs.setBool(_kRogueApDetection, v); _bump(); }
+  Future<void> setHiddenSsidDetection(bool v) async { hiddenSsidDetection = v; await _prefs.setBool(_kHiddenSsidDetection, v); _bump(); }
+
+  Future<void> setBetaBehaviourThreatDetection(bool v) async { betaBehaviourThreatDetection = v; await _prefs.setBool(_kBetaBehaviourThreatDetection, v); _bump(); }
+  Future<void> setBetaLocalMlProfiling(bool v) async { betaLocalMlProfiling = v; await _prefs.setBool(_kBetaLocalMlProfiling, v); _bump(); }
+  Future<void> setBetaIotFingerprinting(bool v) async { betaIotFingerprinting = v; await _prefs.setBool(_kBetaIotFingerprinting, v); _bump(); }
+}
+
+
+============================================================
+FILE: lib\core\services\scan_service.dart
+PATH: C:\Users\Acer\scanx\scanx_app\lib\core\services\scan_service.dart
+============================================================
+import 'dart:async';
+import 'dart:io';
+
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'settings_service.dart';
+
+/// Basic risk level used across the app.
+enum RiskLevel {
+  low,
+  medium,
+  high,
+}
+
+/// Represents a single open port on a host.
+class OpenPort {
+  final int port;
+  final String protocol;
+  final String serviceName;
+
+  OpenPort({
+    required this.port,
+    required this.protocol,
+    required this.serviceName,
+  });
+
+  /// Backwards-compat: some UI still calls `port.service`.
+  String get service => serviceName;
+}
+
+/// Represents a detected host in the scan result.
+class DetectedHost {
+  final String address; // IP
+  final String? hostname;
+  final List<OpenPort> openPorts;
+  final RiskLevel risk;
+
+  DetectedHost({
+    required this.address,
+    required this.hostname,
+    required this.openPorts,
+    required this.risk,
+  });
+
+  /// Backwards-compat: older code uses `host.ip`.
+  String get ip => address;
+}
+
+/// Overall scan result from a single Smart/Full scan.
+class ScanResult {
+  final String target;
+  final DateTime startedAt;
+  final DateTime finishedAt;
+  final List<DetectedHost> hosts;
+
+  ScanResult({
+    required this.target,
+    required this.startedAt,
+    required this.finishedAt,
+    required this.hosts,
+  });
+}
+
+/// Main service that talks to nmap and parses output.
+class ScanService {
+  ScanService._internal();
+  static final ScanService _instance = ScanService._internal();
+  factory ScanService() => _instance;
+
+  /// Last completed scan (Quick/Smart/Full).
+  ScanResult? lastResult;
+
+  // ---------------------------------------------------------------------------
+  // PUBLIC API
+  // ---------------------------------------------------------------------------
+
+  /// Dashboard helper: runs a quick Smart Scan using the saved Settings target.
+  /// Robust: reads SharedPreferences directly so it doesn't depend on any
+  /// specific Settings model fields.
+  Future<ScanResult> runQuickSmartScanFromDefaults() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // Try a few likely keys. If none exist, fallback to a safe default.
+    final target = prefs.getString('defaultTarget') ??
+        prefs.getString('targetCidr') ??
+        prefs.getString('defaultTargetCidr') ??
+        prefs.getString('scanTarget') ??
+        '192.168.1.0/24';
+
+    return runQuickSmartScan(target);
+  }
+
+  /// "Quick Smart Scan" â€“ faster than your standard smart scan:
+  /// - fewer top ports
+  /// - host timeout
+  /// - reduced retries
+  Future<ScanResult> runQuickSmartScan(String target) async {
+    final started = DateTime.now();
+
+    final settings = SettingsService().settings; // may be any model type
+    final args = _buildQuickSmartArgs(target, settings);
+    final stdoutStr = await _runNmap(args);
+
+    final hosts = _parseNmapOutput(stdoutStr);
+    final finished = DateTime.now();
+
+    final result = ScanResult(
+      target: target,
+      startedAt: started,
+      finishedAt: finished,
+      hosts: hosts,
+    );
+
+    lastResult = result;
+    return result;
+  }
+
+  /// Fast "Smart Scan" â€“ focuses on common ports and speed.
+  Future<ScanResult> runSmartScan(String target) async {
+    final started = DateTime.now();
+
+    final settings = SettingsService().settings;
+    final args = _buildSmartScanArgs(target, settings);
+    final stdoutStr = await _runNmap(args);
+
+    final hosts = _parseNmapOutput(stdoutStr);
+    final finished = DateTime.now();
+
+    final result = ScanResult(
+      target: target,
+      startedAt: started,
+      finishedAt: finished,
+      hosts: hosts,
+    );
+
+    lastResult = result;
+    return result;
+  }
+
+  /// Deep "Full Scan" â€“ scans all 1â€“65535 ports.
+  Future<ScanResult> runFullScan(String target) async {
+    final started = DateTime.now();
+
+    final settings = SettingsService().settings;
+    final args = _buildFullScanArgs(target, settings);
+    final stdoutStr = await _runNmap(args);
+
+    final hosts = _parseNmapOutput(stdoutStr);
+    final finished = DateTime.now();
+
+    final result = ScanResult(
+      target: target,
+      startedAt: started,
+      finishedAt: finished,
+      hosts: hosts,
+    );
+
+    lastResult = result;
+    return result;
+  }
+
+  /// Helper: some UI calls `ScanService().getRiskLevel(host)`.
+  RiskLevel getRiskLevel(DetectedHost host) {
+    return _calculateRiskLevel(host.openPorts);
+  }
+
+  // ---------------------------------------------------------------------------
+  // SETTINGS ACCESS (NO HARD DEPENDENCY ON ScanSettings / ScanMode TYPES)
+  // ---------------------------------------------------------------------------
+
+  /// Returns "performance" | "balanced" | "paranoid".
+  /// Works whether scanMode is an enum, a string, or an int index.
+  String _scanModeName(dynamic settings) {
+    try {
+      final mode = settings.scanMode;
+
+      // If it's a Dart enum, toString() is "ScanMode.balanced".
+      final s = mode.toString().toLowerCase();
+      if (s.contains('performance')) return 'performance';
+      if (s.contains('paranoid')) return 'paranoid';
+      if (s.contains('balanced')) return 'balanced';
+
+      // If it's a string.
+      if (mode is String) {
+        final m = mode.toLowerCase();
+        if (m.contains('performance')) return 'performance';
+        if (m.contains('paranoid')) return 'paranoid';
+        if (m.contains('balanced')) return 'balanced';
+      }
+
+      // If it's an int index (best-effort mapping).
+      if (mode is int) {
+        // Common mapping: 0=performance, 1=balanced, 2=paranoid
+        if (mode == 0) return 'performance';
+        if (mode == 2) return 'paranoid';
+        return 'balanced';
+      }
+    } catch (_) {
+      // fall through
+    }
+
+    return 'balanced';
+  }
+
+  bool _isParanoid(dynamic settings) => _scanModeName(settings) == 'paranoid';
+  bool _isPerformance(dynamic settings) =>
+      _scanModeName(settings) == 'performance';
+
+  // ---------------------------------------------------------------------------
+  // ARG BUILDERS
+  // ---------------------------------------------------------------------------
+
+  List<String> _buildQuickSmartArgs(String target, dynamic settings) {
+    // Conservative for home networks: fast + smaller port set + host timeout.
+    final args = <String>[
+      '-sV',
+      '-T4',
+      '--top-ports',
+      '200',
+      '--host-timeout',
+      '15s',
+      '--max-retries',
+      '1',
+    ];
+
+    // If user selected paranoid, slow it slightly (but still "quick").
+    if (_isParanoid(settings)) {
+      // Reduce aggression for flaky routers.
+      args.remove('-T4');
+      args.insert(1, '-T3');
+
+      // Give a bit more time per host.
+      final idx = args.indexOf('--host-timeout');
+      if (idx != -1 && idx + 1 < args.length) {
+        args[idx + 1] = '25s';
+      }
+    }
+
+    args.add(target);
+    return args;
+  }
+
+  List<String> _buildSmartScanArgs(String target, dynamic settings) {
+    final args = <String>[
+      '-sV',
+      '-T4',
+    ];
+
+    if (_isPerformance(settings)) {
+      args.addAll(['--top-ports', '200']);
+    } else if (_isParanoid(settings)) {
+      args.addAll(['--top-ports', '5000', '-T3']);
+    } else {
+      args.addAll(['--top-ports', '1000']);
+    }
+
+    args.add(target);
+    return args;
+  }
+
+  List<String> _buildFullScanArgs(String target, dynamic settings) {
+    final args = <String>[
+      '-sV',
+      '-p',
+      '1-65535',
+    ];
+
+    if (_isPerformance(settings)) {
+      args.add('-T4');
+    } else if (_isParanoid(settings)) {
+      args.add('-T2');
+    } else {
+      args.add('-T3');
+    }
+
+    args.add(target);
+    return args;
+  }
+
+  // ---------------------------------------------------------------------------
+  // LOW-LEVEL NMAP INVOCATION
+  // ---------------------------------------------------------------------------
+
+  Future<String> _runNmap(List<String> args) async {
+    // Windows-safe decoding: systemEncoding avoids UTF-8 pipe crashes.
+    final result = await Process.run(
+      'nmap',
+      args,
+      runInShell: true,
+      stdoutEncoding: systemEncoding,
+      stderrEncoding: systemEncoding,
+    );
+
+    if (result.exitCode != 0) {
+      final stderrStr = (result.stderr ?? '').toString();
+      throw Exception('nmap failed (exit ${result.exitCode}): $stderrStr');
+    }
+
+    final out = (result.stdout ?? '').toString();
+    return _sanitizeText(out);
+  }
+
+  /// Removes common mojibake artifacts + normalizes weird control chars
+  /// without destroying legitimate hostnames.
+  String _sanitizeText(String s) {
+    // Remove replacement chars and trim weird nulls.
+    var t = s.replaceAll('\uFFFD', '');
+
+    // Common mojibake fragments seen in your UI/logs.
+    // We do NOT try to "decode back" (unsafe). We just strip noise.
+    const junk = <String>[
+      'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ',
+      'ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢',
+      'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬',
+      'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡',
+      'ÃƒÆ’Ã‚Â¢',
+    ];
+    for (final j in junk) {
+      t = t.replaceAll(j, '');
+    }
+
+    return t;
+  }
+
+  // ---------------------------------------------------------------------------
+  // PARSING
+  // ---------------------------------------------------------------------------
+
+  final RegExp _hostRegex = RegExp(r'^Nmap scan report for (.+)$');
+  final RegExp _portLineRegex =
+      RegExp(r'^(\d+)/(tcp|udp)\s+open\s+([\w\-\?\.\+]+)');
+
+  List<DetectedHost> _parseNmapOutput(String stdoutStr) {
+    final lines = stdoutStr.split('\n');
+
+    final hosts = <DetectedHost>[];
+    String? currentAddress;
+    String? currentHostname;
+    final currentPorts = <OpenPort>[];
+
+    void flushCurrentHost() {
+      if (currentAddress == null) return;
+
+      final portsCopy = List<OpenPort>.from(currentPorts);
+      currentPorts.clear();
+
+      final risk = _calculateRiskLevel(portsCopy);
+
+      hosts.add(
+        DetectedHost(
+          address: currentAddress!,
+          hostname: currentHostname,
+          openPorts: portsCopy,
+          risk: risk,
+        ),
+      );
+
+      currentAddress = null;
+      currentHostname = null;
+    }
+
+    for (final rawLine in lines) {
+      final line = rawLine.trimRight();
+
+      // Start of a new host.
+      final hostMatch = _hostRegex.firstMatch(line);
+      if (hostMatch != null) {
+        flushCurrentHost();
+
+        final hostString = hostMatch.group(1) ?? '';
+
+        // hostString examples:
+        //  - 192.168.1.10
+        //  - mypc (192.168.1.20)
+        String address = hostString;
+        String? hostname;
+
+        final ipInParens = RegExp(r'(.+)\s+\(([^)]+)\)');
+        final ipMatch = ipInParens.firstMatch(hostString);
+        if (ipMatch != null) {
+          hostname = ipMatch.group(1)?.trim();
+          address = ipMatch.group(2)?.trim() ?? address;
+        }
+
+        currentAddress = address;
+        currentHostname = hostname;
+        continue;
+      }
+
+      // Port lines.
+      final portMatch = _portLineRegex.firstMatch(line);
+      if (portMatch != null && currentAddress != null) {
+        final port = int.tryParse(portMatch.group(1) ?? '') ?? 0;
+        final protocol = portMatch.group(2) ?? 'tcp';
+        final service = portMatch.group(3) ?? '?';
+
+        currentPorts.add(
+          OpenPort(
+            port: port,
+            protocol: protocol,
+            serviceName: service,
+          ),
+        );
+      }
+    }
+
+    // Flush last host if pending.
+    flushCurrentHost();
+
+    return hosts;
+  }
+
+  // ---------------------------------------------------------------------------
+  // RISK LEVEL HEURISTICS
+  // ---------------------------------------------------------------------------
+
+  RiskLevel _calculateRiskLevel(List<OpenPort> ports) {
+    if (ports.isEmpty) return RiskLevel.low;
+
+    bool hasHigh = false;
+    bool hasMedium = false;
+
+    for (final p in ports) {
+      final s = p.serviceName.toLowerCase();
+
+      // High-risk services: remote admin & file shares exposed.
+      if (p.port == 21 ||
+          p.port == 23 ||
+          p.port == 3389 ||
+          p.port == 445 ||
+          p.port == 1900 ||
+          s.contains('telnet') ||
+          s.contains('rdp') ||
+          s.contains('smb')) {
+        hasHigh = true;
+        break;
+      }
+
+      // Medium-risk: typical entry points.
+      if (p.port == 22 ||
+          p.port == 80 ||
+          p.port == 443 ||
+          p.port == 8080 ||
+          s.contains('http') ||
+          s.contains('ssh')) {
+        hasMedium = true;
+      }
+    }
+
+    if (hasHigh) return RiskLevel.high;
+    if (hasMedium) return RiskLevel.medium;
+    return RiskLevel.low;
+  }
+}
+
+
+============================================================
+FILE: lib\main.dart
+PATH: C:\Users\Acer\scanx\scanx_app\lib\main.dart
+============================================================
+import 'package:flutter/material.dart';
+import 'core/widgets/keyboard_stabilizer.dart';
+
+import 'core/services/settings_service.dart';
+import 'features/navigation/main_navigation.dart';
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await SettingsService.init();
+  runApp(const ScanXApp());
+}
+
+class ScanXApp extends StatelessWidget {
+  const ScanXApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final settings = SettingsService();
+
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: settings.themeModeListenable,
+      builder: (context, mode, _) {
+        final isScanXDark = settings.appThemeIndex == 3;
+
+        return KeyboardStabilizer(
+      child: MaterialApp(
+          title: 'SCAN-X',
+          debugShowCheckedModeBanner: false,
+
+          themeMode: mode,
+          theme: _buildLightTheme(),
+          darkTheme: isScanXDark ? _buildScanXDarkTheme() : _buildDarkTheme(),
+
+          home: const MainNavigation(),
+      ),
+    );
+      },
+    );
+  }
+}
+
+ThemeData _buildLightTheme() {
+  const primary = Color(0xFF1ECB7B);
+
+  final base = ThemeData(
+    useMaterial3: true,
+    brightness: Brightness.light,
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: primary,
+      brightness: Brightness.light,
+    ),
+  );
+
+  return base.copyWith(
+    scaffoldBackgroundColor: const Color(0xFFF7F8FA),
+    appBarTheme: base.appBarTheme.copyWith(
+      backgroundColor: const Color(0xFFF7F8FA),
+      foregroundColor: Colors.black,
+      elevation: 0,
+      centerTitle: false,
+      titleTextStyle: const TextStyle(
+        color: Colors.black,
+        fontSize: 18,
+        fontWeight: FontWeight.w700,
+      ),
+    ),
+    cardTheme: const CardThemeData(
+      color: Colors.white,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(18)),
+        side: BorderSide(color: Color(0x1A000000)), // ~10% black
+      ),
+    ),
+    dividerTheme: const DividerThemeData(
+      color: Color(0x14000000),
+      thickness: 1,
+    ),
+    bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+      backgroundColor: Color(0xFFF7F8FA),
+      selectedItemColor: primary,
+      unselectedItemColor: Colors.black54,
+    ),
+    textTheme: base.textTheme.apply(
+      bodyColor: const Color(0xFF121417),
+      displayColor: const Color(0xFF121417),
+    ),
+  );
+}
+
+ThemeData _buildDarkTheme() {
+  const primary = Color(0xFF1ECB7B);
+
+  final base = ThemeData(
+    useMaterial3: true,
+    brightness: Brightness.dark,
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: primary,
+      brightness: Brightness.dark,
+    ),
+  );
+
+  return base.copyWith(
+    scaffoldBackgroundColor: const Color(0xFF0B0D10),
+    cardTheme: const CardThemeData(
+      color: Color(0xFF111318),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(18)),
+        side: BorderSide(color: Color(0xFF22252F)),
+      ),
+    ),
+    bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+      backgroundColor: Color(0xFF0B0D10),
+      selectedItemColor: primary,
+      unselectedItemColor: Colors.white60,
+    ),
+  );
+}
+
+ThemeData _buildScanXDarkTheme() {
+  return _buildDarkTheme().copyWith(
+    scaffoldBackgroundColor: const Color(0xFF07090C),
+    cardTheme: const CardThemeData(
+      color: Color(0xFF0F1216),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(18)),
+        side: BorderSide(color: Color(0xFF1E2330)),
+      ),
+    ),
+  );
+}
+
+

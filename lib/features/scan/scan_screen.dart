@@ -48,6 +48,7 @@ class _ScanScreenState extends State<ScanScreen> {
     });
 
     _progressTimer = Timer.periodic(const Duration(milliseconds: 250), (t) {
+      if (!mounted) return;
       setState(() {
         _gaugeValue += 0.03;
         if (_gaugeValue > 0.9) _gaugeValue = 0.9;
@@ -57,6 +58,7 @@ class _ScanScreenState extends State<ScanScreen> {
 
   void _stopProgress(double finalValue) {
     _progressTimer?.cancel();
+    if (!mounted) return;
     setState(() {
       _gaugeValue = finalValue.clamp(0.0, 1.0);
     });
@@ -152,166 +154,210 @@ class _ScanScreenState extends State<ScanScreen> {
     final mediumRisk = hosts.where((h) => h.risk == RiskLevel.medium).length;
     final lowRisk = hosts.where((h) => h.risk == RiskLevel.low).length;
 
+    final allowSmart = _settingsService.quickScan;
+    final allowFull = _settingsService.deepScan;
+    final stealth = _settingsService.stealthScan;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Scan'),
         centerTitle: true,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              elevation: 6,
-              child: SizedBox(
-                height: 220,
+      // FIX: make screen scrollable so dynamic content never overflows after scans.
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: IntrinsicHeight(
                 child: Column(
                   children: [
-                    const SizedBox(height: 12),
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 32),
-                        child: _ScanGauge(
-                          value: _gaugeValue,
-                          isActive: _isScanning,
-                        ),
+                    Card(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              elevation: 4,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    TextField(
-                      controller: _targetController,
-                      decoration: const InputDecoration(
-                        labelText: 'Target (CIDR or host)',
-                        hintText: 'e.g. 192.168.1.0/24',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: _isScanning ? null : _runSmartScan,
-                            icon: _isScanning
-                                ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                              ),
-                            )
-                                : const Icon(Icons.bolt),
-                            label: Text(
-                              _isScanning ? 'Scanning…' : 'Smart Scan',
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: _isScanning ? null : _runFullScan,
-                            icon: const Icon(Icons.all_inclusive),
-                            label: const Text('Full Scan'),
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (_errorMessage != null) ...[
-                      const SizedBox(height: 8),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Icon(Icons.error_outline,
-                              color: Colors.red, size: 18),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              _errorMessage!,
-                              style: const TextStyle(
-                                color: Colors.redAccent,
-                                fontSize: 12,
+                      elevation: 6,
+                      child: SizedBox(
+                        height: 220,
+                        child: Column(
+                          children: [
+                            const SizedBox(height: 12),
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 32),
+                                child: _ScanGauge(
+                                  value: _gaugeValue,
+                                  isActive: _isScanning,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 12),
+                          ],
+                        ),
                       ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            if (result == null)
-              Expanded(
-                child: Center(
-                  child: Text(
-                    'No scans yet.\nRun a Smart or Full Scan to see devices.',
-                    style: theme.textTheme.bodyMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              )
-            else
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Results summary',
-                      style: theme.textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        _summaryChip(
-                          label: 'Devices',
-                          value: hosts.length.toString(),
-                          color: Colors.blueAccent,
-                        ),
-                        const SizedBox(width: 8),
-                        _summaryChip(
-                          label: 'High',
-                          value: highRisk.toString(),
-                          color: Colors.redAccent,
-                        ),
-                        const SizedBox(width: 8),
-                        _summaryChip(
-                          label: 'Medium',
-                          value: mediumRisk.toString(),
-                          color: Colors.orangeAccent,
-                        ),
-                        const SizedBox(width: 8),
-                        _summaryChip(
-                          label: 'Low',
-                          value: lowRisk.toString(),
-                          color: Colors.greenAccent,
-                        ),
-                      ],
                     ),
                     const SizedBox(height: 16),
-                    const Spacer(),
+                    Card(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      elevation: 4,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          children: [
+                            TextField(
+                              controller: _targetController,
+                              decoration: const InputDecoration(
+                                labelText: 'Target (CIDR or host)',
+                                hintText: 'e.g. 192.168.1.0/24',
+                                border: OutlineInputBorder(),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: ElevatedButton.icon(
+                                    onPressed: (_isScanning || !allowSmart) ? null : _runSmartScan,
+                                    icon: _isScanning
+                                        ? const SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                        : const Icon(Icons.bolt),
+                                    label: Text(
+                                      _isScanning ? 'Scanning…' : (allowSmart ? 'Smart Scan' : 'Smart Scan (disabled)'),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    onPressed: (_isScanning || !allowFull) ? null : _runFullScan,
+                                    icon: const Icon(Icons.all_inclusive),
+                                    label: const Text('Full Scan'),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Icon(
+                                  stealth ? Icons.visibility_off : Icons.visibility,
+                                  size: 16,
+                                  color: theme.colorScheme.primary,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Stealth scan: ${stealth ? 'ON (best-effort)' : 'OFF'} • Full Scan: ${allowFull ? 'ON' : 'OFF'}',
+                                    style: theme.textTheme.bodySmall,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (_errorMessage != null) ...[
+                              const SizedBox(height: 8),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Icon(Icons.error_outline, color: Colors.red, size: 18),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      _errorMessage!,
+                                      style: const TextStyle(
+                                        color: Colors.redAccent,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    if (result == null)
+                      Expanded(
+                        child: Center(
+                          child: Text(
+                            'No scans yet.\nRun a Smart or Full Scan to see devices.',
+                            style: theme.textTheme.bodyMedium,
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      )
+                    else
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Results summary',
+                            style: theme.textTheme.titleMedium,
+                          ),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              _summaryChip(
+                                label: 'Devices',
+                                value: hosts.length.toString(),
+                                color: Colors.blueAccent,
+                              ),
+                              _summaryChip(
+                                label: 'High',
+                                value: highRisk.toString(),
+                                color: Colors.redAccent,
+                              ),
+                              _summaryChip(
+                                label: 'Medium',
+                                value: mediumRisk.toString(),
+                                color: Colors.orangeAccent,
+                              ),
+                              _summaryChip(
+                                label: 'Low',
+                                value: lowRisk.toString(),
+                                color: Colors.greenAccent,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Icon(
+                                stealth ? Icons.visibility_off : Icons.visibility,
+                                size: 16,
+                                color: theme.colorScheme.primary,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Stealth scan: ${stealth ? 'ON (best-effort)' : 'OFF'} • Full Scan: ${allowFull ? 'ON' : 'OFF'}',
+                                  style: theme.textTheme.bodySmall,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+                      ),
                   ],
                 ),
               ),
-          ],
-        ),
+            ),
+          );
+        },
       ),
     );
   }

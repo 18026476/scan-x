@@ -1,6 +1,7 @@
 // lib/core/services/services.dart
 export 'scan_service.dart';
 export 'settings_service.dart';
+export 'security_ai_service.dart';
 
 import 'settings_service.dart';
 

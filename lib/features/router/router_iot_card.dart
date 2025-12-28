@@ -6,6 +6,8 @@
 import 'package:flutter/material.dart';
 import 'package:scanx_app/core/services/scan_service.dart';
 import 'package:scanx_app/features/router/router_iot_security.dart';
+import 'package:scanx_app/core/services/security_ai_service.dart';
+import 'package:scanx_app/core/services/settings_service.dart';
 
 class RouterIotCard extends StatelessWidget {
   final ScanService scanService;
@@ -26,6 +28,12 @@ class RouterIotCard extends StatelessWidget {
     final hosts = result?.hosts ?? const <DetectedHost>[];
 
     final summary = securityService.buildSummary(hosts);
+
+    final settings = SettingsService();
+    final aiInsights = SecurityAiService().networkInsights(
+      result: result,
+      routerSummary: summary,
+    );
 
     Color badgeColor;
     String label;
@@ -146,6 +154,33 @@ class RouterIotCard extends StatelessWidget {
                   );
                 }).toList(),
               ),
+            // AI hardening (settings-gated)
+            if (hosts.isNotEmpty && settings.aiAssistantEnabled && aiInsights.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              const Divider(),
+              const SizedBox(height: 8),
+              Text(
+                'AI hardening',
+                style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 8),
+              ...aiInsights.take(2).map((i) {
+                final icon = i.severity == AiSeverity.high
+                    ? Icons.warning_amber_rounded
+                    : i.severity == AiSeverity.medium
+                        ? Icons.info_outline
+                        : Icons.lightbulb_outline;
+                return ListTile(
+                  dense: true,
+                  visualDensity: VisualDensity.compact,
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(icon, color: theme.colorScheme.primary),
+                  title: Text(i.title, style: theme.textTheme.bodyMedium),
+                  subtitle: Text(i.summary, style: theme.textTheme.bodySmall),
+                );
+              }),
+            ],
+
           ],
         ),
       ),

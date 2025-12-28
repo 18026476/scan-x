@@ -5,6 +5,9 @@ import 'package:scanx_app/features/dashboard/dashboard_screen.dart';
 import 'package:scanx_app/features/scan/scan_screen.dart';
 import 'package:scanx_app/features/devices/devices_screen.dart';
 import 'package:scanx_app/features/settings/settings_screen.dart';
+import 'package:scanx_app/core/services/scan_service.dart';
+import 'package:scanx_app/core/services/settings_service.dart';
+import 'dart:async';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -14,6 +17,8 @@ class MainNavigation extends StatefulWidget {
 }
 
 class _MainNavigationState extends State<MainNavigation> {
+  Timer? _autoScanTimer;
+
   int _currentIndex = 0;
 
   // 4 tabs: Dashboard, Scan, Devices, Settings
@@ -23,6 +28,49 @@ class _MainNavigationState extends State<MainNavigation> {
     DevicesScreen(),
     SettingsScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Best-effort continuous monitoring (settings-gated).
+    // Runs periodic Quick Smart scans using the saved default target.
+    final s = SettingsService();
+    if (s.continuousMonitoring) {
+      final minutes = _scanFrequencyMinutes(s.scanFrequency);
+      if (minutes > 0) {
+        _autoScanTimer?.cancel();
+        _autoScanTimer = Timer.periodic(Duration(minutes: minutes), (_) async {
+          try {
+            await ScanService().runQuickSmartScanFromDefaults();
+          } catch (_) {
+            // Silent in release; continuous monitoring is best-effort.
+          }
+        });
+      }
+    }
+  }
+
+  int _scanFrequencyMinutes(int idx) {
+    // 0=manual, 1=hourly, 2=6-hourly, 3=daily
+    switch (idx) {
+      case 1:
+        return 60;
+      case 2:
+        return 360;
+      case 3:
+        return 1440;
+      default:
+        return 0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _autoScanTimer?.cancel();
+    super.dispose();
+  }
+
 
   void _onItemTapped(int index) {
     setState(() {
