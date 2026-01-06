@@ -1,0 +1,147 @@
+import 'package:scanx_app/core/services/scan_service.dart';
+import 'package:scanx_app/core/services/settings_service.dart';
+
+enum AlertSeverity { info, low, medium, high, critical }
+
+enum AlertType {
+  newDevice,
+  macChanged,
+  possibleArpSpoof,
+  portExposureSpike,
+  highRiskFindings,
+  scanCompleted,
+}
+
+class AlertEvent {
+  final AlertType type;
+  final AlertSeverity severity;
+  final String title;
+  final String message;
+  final String? deviceIp;
+  final String? evidence;
+
+  const AlertEvent({
+    required this.type,
+    required this.severity,
+    required this.title,
+    required this.message,
+    this.deviceIp,
+    this.evidence,
+  });
+}
+
+class AlertRulesEngine {
+  List<AlertEvent> buildEvents({
+    required ScanResult current,
+    required Map<String, dynamic>? previousSnapshot,
+    required Map<String, String> currentIpToMac,
+  }) {
+    final s = SettingsService();
+
+    final prevDevices = (previousSnapshot?['devices'] as Map?)?.cast<String, dynamic>() ?? <String, dynamic>{};
+    final prevIpSet = prevDevices.keys.toSet();
+    final currentIps = current.hosts.map((h) => h.address).toSet();
+
+    final events = <AlertEvent>[];
+
+    final sens = s.alertSensitivity.round().clamp(0, 2);
+    final portSpikeThreshold = sens == 0 ? 10 : (sens == 1 ? 6 : 4);
+    final highRiskNotifyMin = sens == 0 ? 2 : 1;
+
+    if (s.alertNewDevice) {
+      final newIps = currentIps.difference(prevIpSet);
+      for (final ip in newIps) {
+        events.add(AlertEvent(
+          type: AlertType.newDevice,
+          severity: AlertSeverity.medium,
+          title: 'New device detected',
+          message: 'A new device appeared on your network.',
+          deviceIp: ip,
+          evidence: 'IP $ip was not present in the previous snapshot.',
+        ));
+      }
+    }
+
+    if (s.alertMacChange) {
+      for (final ip in currentIps.intersection(prevIpSet)) {
+        final prevMac = ((prevDevices[ip] as Map?)?['mac'] ?? '').toString().toLowerCase();
+        final nowMac = (currentIpToMac[ip] ?? '').toLowerCase();
+        if (prevMac.isNotEmpty && nowMac.isNotEmpty && prevMac != nowMac) {
+          events.add(AlertEvent(
+            type: AlertType.macChanged,
+            severity: AlertSeverity.high,
+            title: 'Device MAC changed',
+            message: 'A device on the same IP address has a different MAC than before.',
+            deviceIp: ip,
+            evidence: 'Previous MAC $prevMac → Current MAC $nowMac',
+          ));
+        }
+      }
+    }
+
+    if (s.alertArpSpoof) {
+      final macToIps = <String, List<String>>{};
+      currentIpToMac.forEach((ip, mac) {
+        final m = mac.toLowerCase();
+        if (m.isEmpty) return;
+        macToIps.putIfAbsent(m, () => <String>[]).add(ip);
+      });
+
+      final suspicious = macToIps.entries.where((e) => e.value.length >= 2);
+      for (final e in suspicious) {
+        events.add(AlertEvent(
+          type: AlertType.possibleArpSpoof,
+          severity: AlertSeverity.high,
+          title: 'Possible ARP spoofing',
+          message: 'The same MAC address appears on multiple IPs.',
+          evidence: 'MAC ${e.key} seen on IPs: ${e.value.join(", ")}',
+        ));
+      }
+    }
+
+    if (s.alertPortScanAttempts && previousSnapshot != null) {
+      for (final h in current.hosts) {
+        final prev = (prevDevices[h.address] as Map?)?.cast<String, dynamic>();
+        final prevOpen = (prev?['openPorts'] is int)
+            ? prev!['openPorts'] as int
+            : int.tryParse('${prev?['openPorts'] ?? 0}') ?? 0;
+
+        final nowOpen = h.openPorts.length;
+        final delta = nowOpen - prevOpen;
+        if (delta >= portSpikeThreshold) {
+          events.add(AlertEvent(
+            type: AlertType.portExposureSpike,
+            severity: AlertSeverity.medium,
+            title: 'Port exposure spike detected',
+            message: 'A device suddenly shows many more open ports than the last scan.',
+            deviceIp: h.address,
+            evidence: 'Open ports increased from $prevOpen → $nowOpen (Δ $delta)',
+          ));
+        }
+      }
+    }
+
+    final highRiskCount = current.hosts.where((h) => h.risk == RiskLevel.high).length;
+    if (s.notifyHighRisk && highRiskCount >= highRiskNotifyMin) {
+      events.add(AlertEvent(
+        type: AlertType.highRiskFindings,
+        severity: AlertSeverity.high,
+        title: 'High-risk devices found',
+        message: 'Your scan detected $highRiskCount high-risk device(s).',
+        evidence: 'Risk is based on scan scoring + open ports/services (where available).',
+      ));
+    }
+
+    if (s.notifyScanCompleted) {
+      events.add(AlertEvent(
+        type: AlertType.scanCompleted,
+        severity: AlertSeverity.info,
+        title: 'Scan completed',
+        message: 'Scan completed for ${current.target}',
+        evidence: 'Hosts: ${current.hosts.length}',
+      ));
+    }
+
+    return events;
+  }
+}

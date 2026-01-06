@@ -1,12 +1,7 @@
 // lib/features/settings/settings_screen.dart
 
 import 'package:flutter/material.dart';
-
-import 'ai_labs_tab.dart';
 import 'package:scanx_app/core/services/settings_service.dart';
-
-
-import 'ai_labs_tab.dart';
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -336,7 +331,7 @@ class _SettingsScreenState extends State<SettingsScreen>
         ),
         _switchTile(
           title: 'Outdated firmware',
-          subtitle: 'Flag routers that havenâ€™t been patched in a while.',
+          subtitle: 'Flag routers that havenÃ¢â‚¬â„¢t been patched in a while.',
           value: routerOutdatedFirmware,
           onChanged: (v) {
             setState(() => routerOutdatedFirmware = v);
@@ -791,7 +786,7 @@ class _SettingsScreenState extends State<SettingsScreen>
         ),
         _switchTile(
           title: 'Explain vulnerabilities',
-          subtitle: 'Show â€œwhat this meansâ€ cards for each issue.',
+          subtitle: 'Show Ã¢â‚¬Å“what this meansÃ¢â‚¬Â cards for each issue.',
           value: aiExplainVuln,
           onChanged: (v) {
             setState(() => aiExplainVuln = v);

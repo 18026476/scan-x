@@ -2,9 +2,12 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:scanx_app/core/utils/text_sanitizer.dart';
+import '../../core/services/pdf_report_service.dart';
+import '../../core/services/report_builder.dart';
+import 'package:printing/printing.dart';
 import '../../core/services/scan_service.dart';
 import '../../core/services/settings_service.dart';
-
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key});
 
@@ -22,7 +25,7 @@ class _ScanScreenState extends State<ScanScreen> {
   String? _errorMessage;
   ScanResult? _lastResult;
 
-  double _gaugeValue = 0.0; // 0.0 – 1.0
+  double _gaugeValue = 0.0; // 0.0 ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ 1.0
   Timer? _progressTimer;
 
   @override
@@ -82,13 +85,16 @@ class _ScanScreenState extends State<ScanScreen> {
       setState(() {
         _isScanning = false;
         _lastResult = result;
-      });
+
+      // Alerts pipeline (additive; does not change scan engine)
+// Alerts pipeline (additive; does not change scan engine)
+});
 
       _stopProgress(0.8);
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Smart scan completed for $target')),
-      );
+    );
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -100,7 +106,7 @@ class _ScanScreenState extends State<ScanScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Smart scan failed: $e')),
-      );
+    );
     }
   }
 
@@ -128,7 +134,7 @@ class _ScanScreenState extends State<ScanScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Full scan completed for $target')),
-      );
+    );
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -140,7 +146,7 @@ class _ScanScreenState extends State<ScanScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Full scan failed: $e')),
-      );
+    );
     }
   }
 
@@ -160,6 +166,21 @@ class _ScanScreenState extends State<ScanScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        actions: [
+          IconButton(
+            tooltip: 'Export Security Report (PDF)',
+            icon: const Icon(Icons.picture_as_pdf),
+            onPressed: () async {
+              if (_lastResult == null) return;
+              final reportJson = ReportBuilder().buildReportJson(
+                result: _lastResult!,
+                scanModeLabel: 'Scan',
+              );
+              final bytes = await PdfReportService().buildReport(reportJson: reportJson);
+              await Printing.layoutPdf(onLayout: (_) async => bytes);
+            },
+          ),
+        ],
         title: const Text('Scan'),
         centerTitle: true,
       ),
@@ -231,7 +252,7 @@ class _ScanScreenState extends State<ScanScreen> {
                                     )
                                         : const Icon(Icons.bolt),
                                     label: Text(
-                                      _isScanning ? 'Scanning…' : (allowSmart ? 'Smart Scan' : 'Smart Scan (disabled)'),
+                                      _isScanning ? 'Scanning' : (allowSmart ? 'Smart Scan' : 'Smart Scan (disabled)'),
                                     ),
                                   ),
                                 ),
@@ -256,7 +277,7 @@ class _ScanScreenState extends State<ScanScreen> {
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
-                                    'Stealth scan: ${stealth ? 'ON (best-effort)' : 'OFF'} • Full Scan: ${allowFull ? 'ON' : 'OFF'}',
+                                    'Stealth scan: ${stealth ? 'ON (best-effort)' : 'OFF'} Full Scan: ${allowFull ? 'ON' : 'OFF'}',
                                     style: theme.textTheme.bodySmall,
                                   ),
                                 ),
@@ -343,7 +364,7 @@ class _ScanScreenState extends State<ScanScreen> {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  'Stealth scan: ${stealth ? 'ON (best-effort)' : 'OFF'} • Full Scan: ${allowFull ? 'ON' : 'OFF'}',
+                                  'Stealth scan: ${stealth ? 'ON (best-effort)' : 'OFF'} Full Scan: ${allowFull ? 'ON' : 'OFF'}',
                                   style: theme.textTheme.bodySmall,
                                 ),
                               ),
@@ -356,7 +377,7 @@ class _ScanScreenState extends State<ScanScreen> {
                 ),
               ),
             ),
-          );
+    );
         },
       ),
     );
@@ -370,8 +391,7 @@ class _ScanScreenState extends State<ScanScreen> {
     return Chip(
       avatar: CircleAvatar(
         backgroundColor: color.withOpacity(0.15),
-        child: Text(
-          value,
+        child: Text(sanitizeUiText(value),
           style: TextStyle(
             color: color,
             fontWeight: FontWeight.bold,
@@ -379,7 +399,7 @@ class _ScanScreenState extends State<ScanScreen> {
           ),
         ),
       ),
-      label: Text(label),
+      label: Text(sanitizeUiText(label)),
       backgroundColor: color.withOpacity(0.08),
     );
   }
@@ -387,7 +407,7 @@ class _ScanScreenState extends State<ScanScreen> {
 
 // SCAN-O-METER GAUGE (top semicircle)
 class _ScanGauge extends StatelessWidget {
-  final double value; // 0.0–1.0
+  final double value; // 0.0ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ1.0
   final bool isActive;
 
   const _ScanGauge({
@@ -421,14 +441,14 @@ class _ScanGauge extends StatelessWidget {
             minorTickColor: minorTickColor,
             majorTickColor: majorTickColor,
           ),
-        );
+    );
       },
     );
   }
 }
 
 class _GaugePainter extends CustomPainter {
-  final double value; // 0.0–1.0
+  final double value; // 0.0ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ1.0
   final bool isActive;
 
   // Theme-safe colors (passed from widget, so we don't need BuildContext here)
@@ -484,7 +504,6 @@ class _GaugePainter extends CustomPainter {
       false,
       activePaint,
     );
-
     final tickPaint = Paint()
       ..color = minorTickColor
       ..style = PaintingStyle.stroke
@@ -507,12 +526,11 @@ class _GaugePainter extends CustomPainter {
       final start = Offset(
         center.dx + outerRadius * math.cos(angle),
         center.dy + outerRadius * math.sin(angle),
-      );
+    );
       final end = Offset(
         center.dx + innerRadius * math.cos(angle),
         center.dy + innerRadius * math.sin(angle),
-      );
-
+    );
       canvas.drawLine(start, end, isMajor ? majorTickPaint : tickPaint);
     }
 
@@ -520,7 +538,6 @@ class _GaugePainter extends CustomPainter {
       textAlign: TextAlign.center,
       textDirection: TextDirection.ltr,
     );
-
     void drawLabel(double t, String label) {
       final angle = startAngle + sweepAngle * t;
       final labelRadius = radius + 20;
@@ -528,8 +545,7 @@ class _GaugePainter extends CustomPainter {
       final pos = Offset(
         center.dx + labelRadius * math.cos(angle),
         center.dy + labelRadius * math.sin(angle),
-      );
-
+    );
       textPainter.text = TextSpan(
         text: label,
         style: TextStyle(
@@ -538,13 +554,13 @@ class _GaugePainter extends CustomPainter {
           fontSize: 11,
           fontWeight: FontWeight.w500,
         ),
-      );
+    );
       textPainter.layout();
 
       final offset = Offset(
         pos.dx - textPainter.width / 2,
         pos.dy - textPainter.height / 2,
-      );
+    );
       textPainter.paint(canvas, offset);
     }
 
@@ -565,7 +581,6 @@ class _GaugePainter extends CustomPainter {
       center.dx + needleLength * math.cos(needleAngle),
       center.dy + needleLength * math.sin(needleAngle),
     );
-
     canvas.drawLine(center, needleEnd, needlePaint);
 
     if (isActive) {

@@ -1,4 +1,4 @@
-﻿// lib/features/navigation/main_navigation.dart
+// lib/features/navigation/main_navigation.dart
 
 import 'package:flutter/material.dart';
 import 'package:scanx_app/features/dashboard/dashboard_screen.dart';
@@ -8,7 +8,7 @@ import 'package:scanx_app/features/settings/settings_screen.dart';
 import 'package:scanx_app/core/services/scan_service.dart';
 import 'package:scanx_app/core/services/settings_service.dart';
 import 'dart:async';
-
+import 'package:scanx_app/core/services/post_scan_pipeline.dart';
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
 
@@ -42,8 +42,12 @@ class _MainNavigationState extends State<MainNavigation> {
         _autoScanTimer?.cancel();
         _autoScanTimer = Timer.periodic(Duration(minutes: minutes), (_) async {
           try {
-            await ScanService().runQuickSmartScanFromDefaults();
-          } catch (_) {
+            final r = await ScanService().runQuickSmartScanFromDefaults();
+            if (mounted) {
+              await PostScanPipeline.handleScanComplete(context, result: r, isAutoScan: true);
+            }if (mounted) {
+              await PostScanPipeline.handleScanComplete(context, result: r, isAutoScan: true);
+            }} catch (_) {
             // Silent in release; continuous monitoring is best-effort.
           }
         });

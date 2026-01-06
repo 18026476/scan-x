@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:scanx_app/core/utils/text_sanitizer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/services/scan_service.dart';
@@ -79,7 +80,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final theme = Theme.of(context);
     final result = ScanService().lastResult;
 
-    // ✅ KEY FIX: Use a scrollable ListView (no Column overflow)
+    // âœ… KEY FIX: Use a scrollable ListView (no Column overflow)
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
@@ -182,7 +183,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
             const SizedBox(height: 16),
 
-            // ✅ KEY FIX: Use Wrap instead of Expanded Row (prevents height issues)
+            // âœ… KEY FIX: Use Wrap instead of Expanded Row (prevents height issues)
             LayoutBuilder(
               builder: (context, constraints) {
                 final isNarrow = constraints.maxWidth < 880;
@@ -279,8 +280,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ],
           ),
           const SizedBox(height: 10),
-          Text(
-            statusText,
+          Text(sanitizeUiText(statusText),
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurface,
             ),
@@ -306,7 +306,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
           if (!_aiAssistantEnabled)
             Text(
-              'Turn ON AI Assistant in Settings → AI & Labs.',
+              'Turn ON AI Assistant in Settings AI & Labs.',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.w700,
@@ -613,16 +613,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                title,
+              Text(sanitizeUiText(title),
                 style: theme.textTheme.labelLarge?.copyWith(
                   color: theme.colorScheme.onSurface,
                   fontWeight: FontWeight.w700,
                 ),
               ),
               const SizedBox(height: 4),
-              Text(
-                value,
+              Text(sanitizeUiText(value),
                 style: theme.textTheme.titleMedium?.copyWith(
                   color: theme.colorScheme.onSurface,
                   fontWeight: FontWeight.w800,
@@ -654,7 +652,7 @@ class _ScanProgressDialog extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Scanning…',
+                'Scanning',
                 style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w800,
                 ),
