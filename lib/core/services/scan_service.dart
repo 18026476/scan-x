@@ -1,9 +1,19 @@
+import 'dart:convert';
+
 import 'dart:async';
+import 'dart:convert';
+
 import 'dart:io';
+
+import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'dart:convert';
+
 import 'settings_service.dart';
+import 'dart:convert';
+
 import 'security_ai_service.dart';
 
 enum RiskLevel { low, medium, high }
@@ -304,8 +314,8 @@ class ScanService {
       'nmap',
       args,
       runInShell: true,
-      stdoutEncoding: systemEncoding,
-      stderrEncoding: systemEncoding,
+      stdoutEncoding: utf8,
+      stderrEncoding: utf8,
     );
 
     if (result.exitCode != 0) {
@@ -327,8 +337,8 @@ class ScanService {
           'nmap',
           fallbackArgs,
           runInShell: true,
-          stdoutEncoding: systemEncoding,
-          stderrEncoding: systemEncoding,
+          stdoutEncoding: utf8,
+          stderrEncoding: utf8,
         );
 
         if (retry.exitCode != 0) {
@@ -347,11 +357,11 @@ class ScanService {
   String _sanitizeText(String s) {
     var t = s.replaceAll('\uFFFD', '');
     const junk = <String>[
-      'ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“',
-      'ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢',
-      'ÃƒÂ¢Ã¢â€šÂ¬',
-      'ÃƒÂ¢Ã¢â€š',
-      'ÃƒÂ¢',
+      'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ',
+      'ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢',
+      'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬',
+      'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡',
+      'ÃƒÆ’Ã‚Â¢',
     ];
     for (final j in junk) {
       t = t.replaceAll(j, '');

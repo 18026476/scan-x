@@ -331,7 +331,7 @@ class _SettingsScreenState extends State<SettingsScreen>
         ),
         _switchTile(
           title: 'Outdated firmware',
-          subtitle: 'Flag routers that havenÃ¢â‚¬â„¢t been patched in a while.',
+          subtitle: "Flag routers that haven't been patched in a while.",
           value: routerOutdatedFirmware,
           onChanged: (v) {
             setState(() => routerOutdatedFirmware = v);
@@ -786,7 +786,7 @@ class _SettingsScreenState extends State<SettingsScreen>
         ),
         _switchTile(
           title: 'Explain vulnerabilities',
-          subtitle: 'Show Ã¢â‚¬Å“what this meansÃ¢â‚¬Â cards for each issue.',
+          subtitle: "Show ""what this means"" cards for each issue.",
           value: aiExplainVuln,
           onChanged: (v) {
             setState(() => aiExplainVuln = v);

@@ -48,15 +48,15 @@ class ScanSnapshotStore {
   Future<Map<String, String>> getIpToMacBestEffort() async {
     try {
       if (Platform.isWindows) {
-        final pr = await Process.run('arp', ['-a'], stdoutEncoding: systemEncoding, stderrEncoding: systemEncoding);
+        final pr = await Process.run('arp', ['-a'], stdoutEncoding: utf8, stderrEncoding: utf8);
         return _parseWindowsArp(pr.stdout?.toString() ?? '');
       }
 
-      final pr1 = await Process.run('arp', ['-a'], stdoutEncoding: systemEncoding, stderrEncoding: systemEncoding);
+      final pr1 = await Process.run('arp', ['-a'], stdoutEncoding: utf8, stderrEncoding: utf8);
       final m1 = _parseUnixArp(pr1.stdout?.toString() ?? '');
       if (m1.isNotEmpty) return m1;
 
-      final pr2 = await Process.run('ip', ['neigh'], stdoutEncoding: systemEncoding, stderrEncoding: systemEncoding);
+      final pr2 = await Process.run('ip', ['neigh'], stdoutEncoding: utf8, stderrEncoding: utf8);
       return _parseIpNeigh(pr2.stdout?.toString() ?? '');
     } catch (_) {
       return {};
