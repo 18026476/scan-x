@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 
+import 'package:scanx_app/core/utils/text_sanitize.dart';
 import 'package:scanx_app/core/services/scan_service.dart';
+import 'package:scanx_app/core/utils/text_sanitize.dart';
 import 'package:scanx_app/core/services/security_ai_service.dart';
 
+import 'package:scanx_app/core/utils/text_sanitize.dart';
 class DeviceDetailsScreen extends StatelessWidget {
   final DetectedHost host;
 
@@ -101,7 +104,7 @@ class DeviceDetailsScreen extends StatelessWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        '${p.port}/${p.protocol} • ${p.serviceName}',
+                        '${p.port}/${p.protocol} €¢ ${p.serviceName}',
                         style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
                       ),
                     ),
@@ -171,7 +174,7 @@ class DeviceDetailsScreen extends StatelessWidget {
                 if (i.action != null && i.action!.trim().isNotEmpty) ...[
                   const SizedBox(height: 6),
                   Text(
-                    'Next: ${i.action}',
+                    'Next: ${scanxTextSafe(i.action)}',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: cs.onSurfaceVariant,
                       fontWeight: FontWeight.w600,
@@ -223,3 +226,4 @@ class DeviceDetailsScreen extends StatelessWidget {
     );
   }
 }
+

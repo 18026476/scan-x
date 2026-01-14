@@ -1,4 +1,4 @@
-// lib/features/router/router_iot_security.dart
+﻿// lib/features/router/router_iot_security.dart
 //
 // Router & IoT security analysis built on top of existing Nmap scan data.
 // Does NOT modify ScanService or the scan engine.
@@ -100,7 +100,7 @@ class RouterIotSecurityService {
         }
       }
 
-      // 3) DNS hijack – informational advisory
+      // 3) DNS hijack €“ informational advisory
       if (_settings.routerDnsHijack) {
         issues.add(const RouterIotIssue(
           type: RouterIotIssueType.possibleDnsHijack,
@@ -110,13 +110,13 @@ class RouterIotSecurityService {
         ));
       }
 
-      // 4) WPS – informational advisory
+      // 4) WPS €“ informational advisory
       if (_settings.routerWpsCheck) {
         issues.add(const RouterIotIssue(
           type: RouterIotIssueType.possibleWps,
           title: 'Review recommended',
           description:
-          'WPS is often insecure. Disable WPS in your router’s wireless settings if possible.',
+          'WPS is often insecure. Disable WPS in your router€™s wireless settings if possible.',
         ));
       }
     }
@@ -239,3 +239,4 @@ class RouterIotSecurityService {
 }
 
 enum _SimpleRisk { low, medium, high }
+

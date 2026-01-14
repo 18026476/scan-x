@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:scanx_app/core/utils/text_sanitize.dart';
 import 'package:flutter/material.dart';
 import 'package:scanx_app/core/utils/text_sanitizer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -80,7 +81,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final theme = Theme.of(context);
     final result = ScanService().lastResult;
 
-    // âœ… KEY FIX: Use a scrollable ListView (no Column overflow)
+    // ÃƒÂ¢Ã…â€œâ‚¬Â¦ KEY FIX: Use a scrollable ListView (no Column overflow)
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
@@ -183,7 +184,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
             const SizedBox(height: 16),
 
-            // âœ… KEY FIX: Use Wrap instead of Expanded Row (prevents height issues)
+            // ÃƒÂ¢Ã…â€œâ‚¬Â¦ KEY FIX: Use Wrap instead of Expanded Row (prevents height issues)
             LayoutBuilder(
               builder: (context, constraints) {
                 final isNarrow = constraints.maxWidth < 880;
@@ -280,7 +281,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ],
           ),
           const SizedBox(height: 10),
-          Text(sanitizeUiText(statusText),
+          Text(scanxTextSafe(statusText),
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurface,
             ),
@@ -435,7 +436,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 if (i.action != null && i.action!.trim().isNotEmpty) ...[
                   const SizedBox(height: 6),
                   Text(
-                    'Next: ${i.action}',
+                    'Next: ${scanxTextSafe(i.action)}',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: cs.onSurfaceVariant,
                       fontWeight: FontWeight.w700,
@@ -613,14 +614,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(sanitizeUiText(title),
+              Text(scanxTextSafe(title),
                 style: theme.textTheme.labelLarge?.copyWith(
                   color: theme.colorScheme.onSurface,
                   fontWeight: FontWeight.w700,
                 ),
               ),
               const SizedBox(height: 4),
-              Text(sanitizeUiText(value),
+              Text(scanxTextSafe(value),
                 style: theme.textTheme.titleMedium?.copyWith(
                   color: theme.colorScheme.onSurface,
                   fontWeight: FontWeight.w800,
@@ -673,3 +674,4 @@ class _ScanProgressDialog extends StatelessWidget {
     );
   }
 }
+

@@ -1,4 +1,4 @@
-import 'package:scanx_app/core/services/scan_service.dart';
+﻿import 'package:scanx_app/core/services/scan_service.dart';
 import 'package:scanx_app/core/services/settings_service.dart';
 
 enum AlertSeverity { info, low, medium, high, critical }
@@ -73,7 +73,7 @@ class AlertRulesEngine {
             title: 'Device MAC changed',
             message: 'A device on the same IP address has a different MAC than before.',
             deviceIp: ip,
-            evidence: 'Previous MAC $prevMac → Current MAC $nowMac',
+            evidence: 'Previous MAC $prevMac †’ Current MAC $nowMac',
           ));
         }
       }
@@ -115,7 +115,7 @@ class AlertRulesEngine {
             title: 'Port exposure spike detected',
             message: 'A device suddenly shows many more open ports than the last scan.',
             deviceIp: h.address,
-            evidence: 'Open ports increased from $prevOpen → $nowOpen (Δ $delta)',
+            evidence: 'Open ports increased from $prevOpen †’ $nowOpen (Î” $delta)',
           ));
         }
       }

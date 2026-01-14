@@ -1,0 +1,29 @@
+SCAN-X PATCH V23
+Time: 14-01-2026 16:08:18
+Root: C:\Users\Acer\scanx\scan-x
+
+==== RESTORE scan_service.dart from .bak_v22 ====
+RestoredScanServiceFromV22: True
+
+==== WRITE text_sanitize.dart ====
+Backup: C:\Users\Acer\scanx\scan-x\lib\core\utils\text_sanitize.dart.bak_20260114_160818
+Wrote: C:\Users\Acer\scanx\scan-x\lib\core\utils\text_sanitize.dart
+
+==== WRITE text_sanitizer.dart ====
+Backup: C:\Users\Acer\scanx\scan-x\lib\core\utils\text_sanitizer.dart.bak_20260114_160818
+Wrote: C:\Users\Acer\scanx\scan-x\lib\core\utils\text_sanitizer.dart
+
+==== PATCH UI callsites (sanitizeUiText -> scanxTextSafe) ====
+File: C:\Users\Acer\scanx\scan-x\lib\features\dashboard\dashboard_screen.dart
+Backup: C:\Users\Acer\scanx\scan-x\lib\features\dashboard\dashboard_screen.dart.bak_20260114_160818
+Patched: C:\Users\Acer\scanx\scan-x\lib\features\dashboard\dashboard_screen.dart
+File: C:\Users\Acer\scanx\scan-x\lib\features\scan\scan_screen.dart
+Backup: C:\Users\Acer\scanx\scan-x\lib\features\scan\scan_screen.dart.bak_20260114_160818
+Patched: C:\Users\Acer\scanx\scan-x\lib\features\scan\scan_screen.dart
+File: C:\Users\Acer\scanx\scan-x\lib\core\services\pdf_report_service.dart
+Backup: C:\Users\Acer\scanx\scan-x\lib\core\services\pdf_report_service.dart.bak_20260114_160818
+Patched: C:\Users\Acer\scanx\scan-x\lib\core\services\pdf_report_service.dart
+
+==== PATCH security_ai_service.dart (AI text source) ====
+Backup: C:\Users\Acer\scanx\scan-x\lib\core\services\security_ai_service.dart.bak_20260114_160818
+Patched: C:\Users\Acer\scanx\scan-x\lib\core\services\security_ai_service.dart

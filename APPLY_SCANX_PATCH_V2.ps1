@@ -1,3 +1,42 @@
+param(
+  [string]$ProjectRoot = (Resolve-Path -LiteralPath ".").Path
+)
+
+$ErrorActionPreference = "Stop"
+[System.IO.Directory]::SetCurrentDirectory($ProjectRoot)
+
+function Timestamp() { Get-Date -Format "yyyyMMdd_HHmmss" }
+function Ensure-Dir([string]$dir) {
+  if ([string]::IsNullOrWhiteSpace($dir)) { return }
+  if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }
+}
+function Backup-File([string]$path) {
+  if (Test-Path -LiteralPath $path) {
+    $bak = "$path.bak_$(Timestamp)"
+    Copy-Item -LiteralPath $path -Destination $bak -Force
+    Write-Host "Backup: $bak"
+  }
+}
+function Read-Raw([string]$path) { Get-Content -LiteralPath $path -Raw }
+function Write-Utf8NoBom([string]$path, [string]$content) {
+  $dir = Split-Path -Parent $path
+  Ensure-Dir $dir
+  $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+  [System.IO.File]::WriteAllText($path, $content, $utf8NoBom)
+  Write-Host "Wrote: $path"
+}
+
+if (-not (Test-Path -LiteralPath (Join-Path $ProjectRoot "pubspec.yaml"))) {
+  throw "pubspec.yaml not found. Run from Flutter project root. Current: $ProjectRoot"
+}
+
+Write-Host "=== APPLY PATCH V2: Fix ToggleWiringRegistry + Fix Scan Labs/ML summary compilation ==="
+Write-Host "ProjectRoot: $ProjectRoot"
+
+# 1) Overwrite toggle_wiring_registry.dart with known-good version
+$reg = Join-Path $ProjectRoot "lib\core\services\toggle_wiring_registry.dart"
+Backup-File $reg
+Write-Utf8NoBom $reg @"
 /// Auto-generated toggle wiring registry.
 /// Used by tests to ensure no duplicate keys and no dead toggles.
 ///
@@ -80,3 +119,73 @@ class ToggleWiringRegistry {
     ToggleWiring('wifiDeauthDetection', ToggleConsumer.scanEngine, 'Settings'),
   ];
 }
+
+"@
+
+# 2) Patch scan_screen.dart to:
+#    - remove incorrect .settings. access
+#    - ensure _enabledLabsMl() helper exists if Scan screen uses it
+$scan = Join-Path $ProjectRoot "lib\features\scan\scan_screen.dart"
+if (-not (Test-Path -LiteralPath $scan)) {
+  Write-Host "WARN: scan_screen.dart not found at expected path: $scan"
+} else {
+  $src = Read-Raw $scan
+  $orig = $src
+
+  # fix incorrect access pattern introduced by earlier patch
+  $src = $src -replace "_settingsService\.settings\.", "_settingsService."
+
+  # If the file references _enabledLabsMl() but method doesn't exist, inject method right after the SettingsService field.
+  if (($src -match "_enabledLabsMl\(") -and ($src -notmatch "List<String>\s+_enabledLabsMl\s*\(")) {
+    $method = @"
+  List<String> _enabledLabsMl() {
+    final enabled = <String>[];
+
+    // WiFi / traffic (beta labs)
+    if (_settingsService.packetSnifferLite) enabled.add('Sniffer');
+    if (_settingsService.wifiDeauthDetection) enabled.add('Deauth');
+    if (_settingsService.rogueApDetection) enabled.add('Rogue AP');
+    if (_settingsService.hiddenSsidDetection) enabled.add('Hidden SSID');
+
+    if (_settingsService.betaBehaviourThreatDetection) enabled.add('ML: Behaviour');
+    if (_settingsService.betaLocalMlProfiling) enabled.add('ML: Profiling');
+    if (_settingsService.betaIotFingerprinting) enabled.add('ML: IoT FP');
+
+    // AI assistant toggles (UI wiring)
+    if (_settingsService.aiAssistantEnabled) enabled.add('AI Assistant');
+    if (_settingsService.aiExplainVuln) enabled.add('Explain Vulns');
+    if (_settingsService.aiOneClickFix) enabled.add('One-Click Fix');
+    if (_settingsService.aiRiskScoring) enabled.add('AI Risk');
+    if (_settingsService.aiRouterHardening) enabled.add('Router Playbooks');
+    if (_settingsService.aiDetectUnnecessaryServices) enabled.add('Detect Services');
+    if (_settingsService.aiProactiveWarnings) enabled.add('Proactive Warnings');
+
+    return enabled;
+  }
+
+"@
+
+    # Insert after the first SettingsService field line
+    $src = [regex]::Replace(
+      $src,
+      "(?m)^\s*final\s+SettingsService\s+_settingsService\s*=\s*SettingsService\(\);\s*$",
+      "`$0`n`n$method",
+      1
+    )
+  }
+
+  if ($src -ne $orig) {
+    Backup-File $scan
+    Write-Utf8NoBom $scan $src
+  } else {
+    Write-Host "INFO: scan_screen.dart not modified (nothing to patch)."
+  }
+}
+
+Write-Host ""
+Write-Host "=== PATCH V2 APPLIED ==="
+Write-Host "Now run:"
+Write-Host "  flutter clean"
+Write-Host "  flutter pub get"
+Write-Host "  flutter test"
+Write-Host "  flutter run -d windows"

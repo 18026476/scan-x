@@ -109,7 +109,7 @@ class RouterIotCard extends StatelessWidget {
             Text(
               hosts.isEmpty
                   ? 'IoT devices: 0 (High: 0, Med: 0)'
-                  : 'IoT devices: ${summary.totalIotDevices}  '
+                  : 'IoT devices: ${summary.totalIotDevices} '
                   '(High: ${summary.highRiskIotDevices}, Med: ${summary.mediumRiskIotDevices})',
               style: theme.textTheme.bodySmall,
             ),

@@ -1,13 +1,52 @@
+# =========================
+# SCAN-X PATCH V4 (one-go) - FIX pdf_report_service.dart corruption + restore build/tests
+# Run from your project root:
+#   cd C:\Users\Acer\scanx\scan-x
+#   powershell -ExecutionPolicy Bypass -File .\APPLY_SCANX_PATCH_V4.ps1
+# =========================
+
+$ErrorActionPreference = "Stop"
+
+function Timestamp() { Get-Date -Format "yyyyMMdd_HHmmss" }
+function Backup-File([string]$path) {
+  if (Test-Path -LiteralPath $path) {
+    $bak = "$path.bak_$(Timestamp)"
+    Copy-Item -LiteralPath $path -Destination $bak -Force
+    Write-Host "Backup: $bak" -ForegroundColor DarkGray
+  }
+}
+
+# Resolve project root as current directory
+$ProjectRoot = (Resolve-Path -LiteralPath ".").Path
+Write-Host "=== APPLY SCAN-X PATCH V4: Repair pdf_report_service.dart (compile-safe) + restore report sections ==="
+Write-Host "ProjectRoot: $ProjectRoot"
+
+$pdfPath = Join-Path $ProjectRoot "lib\core\services\pdf_report_service.dart"
+
+# If a recent backup exists and current file is clearly corrupted, restore backup first (safety net)
+$bakCandidates = Get-ChildItem -LiteralPath (Split-Path $pdfPath -Parent) -Filter "pdf_report_service.dart.bak_*" -ErrorAction SilentlyContinue | Sort-Object Name -Descending
+if ($bakCandidates -and (Test-Path -LiteralPath $pdfPath)) {
+  $cur = Get-Content -LiteralPath $pdfPath -Raw -ErrorAction SilentlyContinue
+  if ($cur -match "import\s+''dart" -or $cur -match "import\s+''package" -or $cur -match "String starting with ' must end with '") {
+    $latestBak = $bakCandidates[0].FullName
+    Write-Host "Restoring from latest backup: $latestBak" -ForegroundColor Yellow
+    Copy-Item -LiteralPath $latestBak -Destination $pdfPath -Force
+  }
+}
+
+Backup-File $pdfPath
+
+# Write a known-good implementation (no fancy escaping; single quotes only where needed)
+$fixed = @'
 import 'dart:typed_data';
 
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import 'package:scanx_app/core/utils/text_sanitizer.dart';
-import 'package:scanx_app/core/utils/text_sanitize.dart';
 
 class PdfReportService {
-  String _s(dynamic v) => scanxTextSafe((v ?? '').toString());
+  String _s(dynamic v) => sanitizeUiText((v ?? '').toString());
 
   /// Build short "AI-style" insights from findings (heuristic, no external calls).
   List<String> _aiInsightsFromFindings(List<Map> findings) {
@@ -147,3 +186,19 @@ class PdfReportService {
     return doc.save();
   }
 }
+'@
+
+# Ensure target directory exists
+$dir = Split-Path $pdfPath -Parent
+if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Path $dir | Out-Null }
+
+Set-Content -LiteralPath $pdfPath -Value $fixed -Encoding UTF8
+Write-Host "Wrote: $pdfPath" -ForegroundColor Green
+
+Write-Host ""
+Write-Host "=== PATCH V4 APPLIED ===" -ForegroundColor Green
+Write-Host "Now run:"
+Write-Host "  flutter clean"
+Write-Host "  flutter pub get"
+Write-Host "  flutter test"
+Write-Host "  flutter run -d windows"

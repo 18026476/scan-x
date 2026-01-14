@@ -1,0 +1,25 @@
+SCAN-X PATCH V22
+Time: 14-01-2026 15:51:59
+Root: C:\Users\Acer\scanx\scan-x
+
+==== WRITE text_sanitize.dart ====
+Backup: C:\Users\Acer\scanx\scan-x\lib\core\utils\text_sanitize.dart.bak_v22_20260114_155200
+Wrote: C:\Users\Acer\scanx\scan-x\lib\core\utils\text_sanitize.dart
+
+==== WRITE text_sanitizer.dart ====
+Backup: C:\Users\Acer\scanx\scan-x\lib\core\utils\text_sanitizer.dart.bak_v22_20260114_155200
+Wrote: C:\Users\Acer\scanx\scan-x\lib\core\utils\text_sanitizer.dart
+
+==== PATCH scan_service.dart ====
+Backup: C:\Users\Acer\scanx\scan-x\lib\core\services\scan_service.dart.bak_v22_20260114_155200
+Patched: C:\Users\Acer\scanx\scan-x\lib\core\services\scan_service.dart
+
+==== PATCH security_ai_service.dart ====
+Backup: C:\Users\Acer\scanx\scan-x\lib\core\services\security_ai_service.dart.bak_v22_20260114_155201
+Patched: C:\Users\Acer\scanx\scan-x\lib\core\services\security_ai_service.dart
+
+==== DONE ====
+Sanitizer: C:\Users\Acer\scanx\scan-x\lib\core\utils\text_sanitize.dart
+Wrapper:   C:\Users\Acer\scanx\scan-x\lib\core\utils\text_sanitizer.dart
+AI svc:    C:\Users\Acer\scanx\scan-x\lib\core\services\security_ai_service.dart
+Scan svc:  C:\Users\Acer\scanx\scan-x\lib\core\services\scan_service.dart

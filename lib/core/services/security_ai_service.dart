@@ -1,8 +1,10 @@
 import 'dart:math';
 
+import 'package:scanx_app/core/utils/text_sanitize.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'scan_service.dart';
+import 'package:scanx_app/core/utils/text_sanitizer.dart';
 
 enum AiSeverity { low, medium, high }
 
@@ -36,6 +38,132 @@ class AiInsight {
 }
 
 class SecurityAiService {
+  /* --- SCAN-X: DASHBOARD PLAIN ENGLISH WIRING --- */
+
+  List<int> _scanxPortsFromHost(dynamic h) {
+    final out = <int>[];
+    try {
+      final portsDyn = h.openPorts;
+      if (portsDyn is Iterable) {
+        for (final p in portsDyn) {
+          try {
+            final v = p.port;
+            if (v is int) out.add(v);
+          } catch (_) {}
+        }
+      }
+    } catch (_) {}
+    out.sort();
+    return out;
+  }
+
+  String scanxExplainFindingsBody(dynamic h) {
+    try {
+      final name = (h.hostname ?? h.address ?? h.ip ?? 'Device').toString();
+      final ports = _scanxPortsFromHost(h);
+      return scanxExplainPlainEnglish(deviceName: name, openPorts: ports);
+    } catch (_) {
+      return scanxCleanText(
+        'What we found: We could not read this device details.\n\n'
+        'Why it matters: This can happen if the scan result is incomplete.\n\n'
+        'How to fix:\n-  Restart the app\n-  Run the scan again\n-  Update the app if the issue continues.'
+      );
+    }
+  }
+
+  String scanxUnnecessaryServicesBody(dynamic h) {
+    final ports = _scanxPortsFromHost(h);
+    if (ports.isEmpty) {
+      return scanxCleanText(
+        'What we found: No open services were detected on this device.\n\n'
+        'Why it matters: Fewer open services usually means less exposure.\n\n'
+        'How to fix:\n-  Keep the device updated\n-  Use a strong password'
+      );
+    }
+
+    // Plain English summary: ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œservices you likely donÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¾ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢t needÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â
+    final risky = <int>[];
+    for (final p in ports) {
+      if (p == 23 || p == 21 || p == 445 || p == 3389 || p == 1900) risky.add(p);
+    }
+
+    final listText = risky.isEmpty ? ports.take(6).join(', ') : risky.join(', ');
+    return scanxCleanText(
+      'What we found: Some services are open that many home users do not need (ports: ' + listText + ').\n\n'
+      'Why it matters: Every open service is another ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œdoorÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â. If you do not use it, closing it reduces risk.\n\n'
+      'How to fix:\n' + scanxSimpleFixAdviceForPorts(ports)
+    );
+  }
+
+  String scanxRouterHardeningBody(String routerIp) {
+    final ip = routerIp.trim().isEmpty ? 'your router' : routerIp.trim();
+    return scanxCleanText(
+      'What we found: Router security checklist for ' + ip + '.\n\n'
+      'Why it matters: Your router is the ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œfront doorÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â for your whole network.\n\n'
+      'How to fix (5 steps):\n'
+      '-  Change the router admin password\n'
+      '-  Turn OFF WPS\n'
+      '-  Turn OFF UPnP unless you need it\n'
+      '-  Update router firmware\n'
+      '-  Turn OFF Remote Management (access from internet)'
+    );
+  }
+
+  String scanxOneClickFixesBody(dynamic h) {
+    final ports = _scanxPortsFromHost(h);
+    if (ports.isEmpty) {
+      return scanxCleanText(
+        'Suggested fixes:\n'
+        '-  Keep the device updated\n'
+        '-  Use a strong password\n\n'
+        'Next: Run Smart Scan again to confirm risk stays low.'
+      );
+    }
+
+    final fixes = <String>[];
+    if (ports.contains(445)) fixes.add('Turn OFF Windows file sharing if you do not use it (port 445).');
+    if (ports.contains(23)) fixes.add('Turn OFF Telnet (port 23).');
+    if (ports.contains(1900)) fixes.add('Turn OFF UPnP on your router if you do not need it (port 1900).');
+    if (ports.contains(3389)) fixes.add('Turn OFF Remote Desktop if you do not use it (port 3389).');
+    if (ports.contains(80) || ports.contains(443)) fixes.add('Change admin password for any web control panels (ports 80/443).');
+
+    if (fixes.isEmpty) fixes.add('Keep the device updated and use a strong password.');
+
+    return scanxCleanText(
+      'Suggested fixes:\n'
+      + fixes.map((x) => '-  ' + x).join('\n')
+      + '\n\nNext: Apply fixes -> run Smart Scan again -> confirm risk drops.'
+    );
+  }
+
+  String scanxAiSummaryBody(List<dynamic> hosts) {
+    final total = hosts.length;
+    int high = 0, medium = 0, low = 0;
+
+    for (final h in hosts) {
+      try {
+        final r = h.risk.toString().toLowerCase();
+        if (r.contains('high')) high++;
+        else if (r.contains('medium')) medium++;
+        else low++;
+      } catch (_) {
+        low++;
+      }
+    }
+
+    final next = (high > 0)
+        ? 'Next: Open Devices -> tap a High risk device -> review open ports.'
+        : (medium > 0)
+            ? 'Next: Review Medium risk devices and tighten passwords/settings.'
+            : 'Next: Keep devices updated and re-scan weekly.';
+
+    return scanxCleanText(
+      'Devices found: ' + total.toString() + '. High: ' + high.toString() + ', Medium: ' + medium.toString() + ', Low: ' + low.toString() + '.\n'
+      + next
+    );
+  }
+
+  /* --- END SCAN-X: DASHBOARD PLAIN ENGLISH WIRING --- */
   // FIX: allow older calls like SecurityAiService(something) without breaking build
   SecurityAiService([Object? _ignored]);
 
@@ -107,7 +235,7 @@ class SecurityAiService {
       AiInsight(
         title: 'Open services detected',
         message:
-        '$name exposes ${host.openPorts.length} port(s): $topPorts${host.openPorts.length > 6 ? '…' : ''}',
+        '$name exposes ${host.openPorts.length} port(s): $topPorts${host.openPorts.length > 6 ? '...' : ''}',
         severity: sev,
         action: flags.oneClickFixes
             ? 'Disable unused services and restrict admin panels to LAN only.'
@@ -212,7 +340,7 @@ class SecurityAiService {
       message:
       'Devices: ${hosts.length}. High: $high, Medium: $med, Low: $low. Next: review highest-risk device first.',
       severity: sev,
-      action: 'Open Devices → tap a High risk device → review open ports.',
+      action: scanxCleanText('Open Devices -> tap a High risk device -> review open ports.'),
       tag: 'summary',
     );
   }
@@ -226,7 +354,7 @@ class SecurityAiService {
         message:
         'Router: $routerIp. Disable WPS, disable UPnP unless required, update firmware, restrict remote admin.',
         severity: AiSeverity.medium,
-        action: 'Open Router & IoT → follow the checklist and verify DNS servers.',
+        action: scanxCleanText('Open Router & IoT -> follow the checklist and verify DNS servers.'),
         tag: 'router',
       ),
     ];
@@ -251,7 +379,7 @@ class SecurityAiService {
           title: 'Explain findings: ${h.hostname ?? h.ip}',
           message: 'Sensitive services detected on: $portsStr. ${_explainPorts(worst)}',
           severity: sev,
-          action: 'If not required, disable services or restrict to LAN only.',
+          action: scanxCleanText('If not required, disable services or restrict to LAN only.'),
           tag: 'device',
         ),
       );
@@ -291,7 +419,7 @@ class SecurityAiService {
           message:
           'Often-unnecessary risky services detected: ${flagged.join(', ')}. This increases attack surface.',
           severity: AiSeverity.high,
-          action: 'Disable Telnet/FTP/UPnP/SMB where possible.',
+          action: scanxCleanText('Disable Telnet/FTP/UPnP/SMB where possible.'),
           tag: 'service',
         ),
       );
@@ -328,7 +456,7 @@ class SecurityAiService {
             message:
             '${h.hostname ?? h.ip} exposes HTTP (80) and UPnP (1900). UPnP is commonly abused.',
             severity: AiSeverity.medium,
-            action: 'Disable UPnP unless required. Keep admin pages LAN-only.',
+            action: scanxCleanText('Disable UPnP unless required. Keep admin pages LAN-only.'),
             tag: 'warning',
           ),
         );
@@ -341,7 +469,7 @@ class SecurityAiService {
             message:
             '${h.hostname ?? h.ip} exposes SMB (445) and RDP (3389). This combo is frequently targeted.',
             severity: AiSeverity.high,
-            action: 'Restrict access and disable services if not required.',
+            action: scanxCleanText('Restrict access and disable services if not required.'),
             tag: 'warning',
           ),
         );
@@ -394,7 +522,7 @@ class SecurityAiService {
         title: 'One-click fixes (guided): ${h.hostname ?? h.ip}',
         message: 'Suggested fixes:\n- ${steps.join('\n- ')}',
         severity: AiSeverity.high,
-        action: 'Apply fixes → run Smart Scan again → confirm risk drops.',
+        action: scanxCleanText('Apply fixes -> run Smart Scan again -> confirm risk drops.'),
         tag: 'fix',
       ),
     );
@@ -406,7 +534,7 @@ class SecurityAiService {
     final seen = <String>{};
     final out = <AiInsight>[];
     for (final i in input) {
-      final key = '${i.title}::${i.message}::${i.severity.name}';
+      final key = '${i.title}::${scanxTextSafe(i.message)}::${i.severity.name}';
       if (seen.add(key)) out.add(i);
     }
     return out;
@@ -545,3 +673,46 @@ class AiFlags {
     );
   }
 }
+
+
+ // --- SCAN-X: SIMPLE EXPLAINERS (AUTO-GENERATED) ---
+String scanxCleanText(String s) => scanxTextSafe(s);
+
+ String scanxSimpleFixAdviceForPorts(List<int> ports) {
+   final p = ports.toSet();
+   final items = <String>[];
+
+   if (p.contains(445)) {
+     items.add('File sharing is open (port 445). If you do not use file sharing, turn it OFF in Windows Advanced sharing settings. If you do use it, keep it Private network only and require a password.');
+   }
+   if (p.contains(80) || p.contains(443)) {
+     items.add('A web control panel is open (ports 80/443). Change the admin password and turn OFF Remote Management if you see it.');
+   }
+   if (p.contains(23)) {
+     items.add('Telnet is enabled (port 23). Turn it OFF. Telnet is outdated and not secure.');
+   }
+   if (p.contains(3389)) {
+     items.add('Remote Desktop is enabled (port 3389). Turn it OFF if you do not use it. If you use it, restrict access and keep Windows updated.');
+   }
+   if (p.contains(1900)) {
+     items.add('UPnP/Device discovery is detected (port 1900). On your router, consider turning OFF UPnP unless you need it for gaming/streaming.');
+   }
+
+   if (items.isEmpty) {
+     return 'No common risky services were detected. Keep devices updated and use strong passwords.';
+   }
+   return items.map((x) => 'ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ $x').join('\n');
+ }
+
+ String scanxExplainPlainEnglish({
+   required String deviceName,
+   required List<int> openPorts,
+ }) {
+   final ports = openPorts.toSet().toList()..sort();
+   final portsText = ports.isEmpty ? 'No open ports detected.' : 'Open ports found: ${ports.join(', ')}.';
+   final what = 'What we found: $portsText';
+   final why = 'Why it matters: Open services can increase the chance of unwanted access. This does not always mean you are hacked, but it is worth checking.';
+   final how = 'How to fix:\n${scanxSimpleFixAdviceForPorts(ports)}';
+   return scanxCleanText('$what\n\n$why\n\n$how');
+ }
+ // --- END SCAN-X: SIMPLE EXPLAINERS (AUTO-GENERATED) ---

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/services/settings_service.dart';
 
@@ -168,7 +168,7 @@ class _AiLabsTabState extends State<AiLabsTab> {
             children: [
               SwitchListTile(
                 title: const Text('Explain vulnerabilities', style: TextStyle(fontWeight: FontWeight.w800)),
-                subtitle: const Text('Shows “what this means” cards for each issue.'),
+                subtitle: const Text('Shows €œwhat this means€ cards for each issue.'),
                 value: explain,
                 onChanged: aiMaster ? (v) async { setState(() => explain = v); await _setBool(_kExplain, v); } : null,
               ),

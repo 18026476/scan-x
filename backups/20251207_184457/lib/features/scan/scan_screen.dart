@@ -1,4 +1,4 @@
-﻿// lib/features/scan/scan_screen.dart
+﻿  // lib/features/scan/scan_screen.dart
 
 import 'dart:async';
 import 'dart:math' as math;

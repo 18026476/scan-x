@@ -1,35 +1,17 @@
-import 'dart:convert';
+import 'text_sanitize.dart';
 
-bool _looksBroken(String s) {
-  return s.contains('Ã') || s.contains('Â') || s.contains('â€') || s.contains('�');
+/// Backward-compatible helpers.
+bool scanxLooksBroken(String s) {
+  return s.contains('\u00C3') ||
+      s.contains('\u00C2') ||
+      s.contains('\u00E2') ||
+      s.contains('\u201A') ||
+      s.contains('\uFFFD');
 }
 
-String repairMojibake(String input) {
-  if (input.isEmpty) return input;
-  if (!_looksBroken(input)) return input;
+/// Single source of truth.
+String scanxCleanText(String s) => scanxTextSafe(s);
 
-  String s = input;
-
-  // Try 2 rounds latin1 -> utf8 repair (handles double-mojibake)
-  for (int i = 0; i < 2; i++) {
-    try {
-      final bytes = latin1.encode(s);
-      final repaired = utf8.decode(bytes, allowMalformed: true);
-      if (repaired == s) break;
-      s = repaired;
-      if (!_looksBroken(s)) break;
-    } catch (_) {
-      break;
-    }
-  }
-
-  // Still broken? Strip non-ASCII to keep UI readable
-  if (_looksBroken(s)) {
-    s = s.replaceAll(RegExp(r'[^\x20-\x7E]+'), ' ');
-    s = s.replaceAll(RegExp(r'\s{2,}'), ' ').trim();
-  }
-
-  return s;
-}
-
-String sanitizeUiText(String s) => repairMojibake(s);
+/// Global alias used by some UI/PDF widgets.
+/// Keep it global so you do NOT need widget-level helper methods.
+String sanitizeUiText(String s) => scanxTextSafe(s);
