@@ -511,6 +511,28 @@ class SettingsService {
     await setHostsPerScan(value.maxDeepHosts);
     await setAutoScanOnLaunch(value.autoQuickScanOnStartup);
   }
+  /* SCANX_V13D_SETTINGS_SNAPSHOT_BEGIN */
+  /// Returns a JSON-safe snapshot of AI/Labs/ML toggles for the PDF report.
+  /// This avoids duplicating keys/getters and guarantees the report reflects the same settings as the UI.
+  Map<String, dynamic> aiLabsMlSnapshot() {
+    return <String, dynamic>{
+      'aiAssistantEnabled': aiAssistantEnabled,
+      'aiExplainVuln': aiExplainVuln,
+      'aiOneClickFix': aiOneClickFix,
+      'aiRiskScoring': aiRiskScoring,
+      'aiRouterHardening': aiRouterHardening,
+      'aiDetectUnnecessaryServices': aiDetectUnnecessaryServices,
+      'aiProactiveWarnings': aiProactiveWarnings,
+      'packetSnifferLite': packetSnifferLite,
+      'wifiDeauthDetection': wifiDeauthDetection,
+      'rogueApDetection': rogueApDetection,
+      'hiddenSsidDetection': hiddenSsidDetection,
+      'betaBehaviourThreatDetection': betaBehaviourThreatDetection,
+      'betaLocalMlProfiling': betaLocalMlProfiling,
+      'betaIotFingerprinting': betaIotFingerprinting,
+    };
+  }
+  /* SCANX_V13D_SETTINGS_SNAPSHOT_END */
 }
 
 enum ScanMode {
