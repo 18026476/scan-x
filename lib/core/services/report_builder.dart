@@ -117,7 +117,7 @@ class ReportBuilder {
     // --- scanMeta always filled
     final scanMeta = <String, dynamic>{
       'scanTimeUtc': nowUtc,
-      'targetCidr': (targetCidr == null || targetCidr.trim().isEmpty) ? '-' : targetCidr.trim(),
+      'targetCidr': scanxEnsureCidr(((targetCidr == null || targetCidr.trim().isEmpty) ? '-' : targetCidr.trim()).toString()),
       'scanMode': scanModeLabel,
     };
 
@@ -395,3 +395,31 @@ List<String> _scanxV16MlInsights({
 
   return lines;
 }
+
+/* SCANX_V16C_CIDR_BEGIN */
+// V16C: CIDR normalization for report meta.
+// - If already has / => keep
+// - If looks like IPv4 without /:
+//     - if ends with .0 => assume /24 (common LAN CIDR target)
+//     - else => /32 (single-host target)
+String scanxEnsureCidr(String input) {
+  final s = input.trim();
+  if (s.isEmpty) return '-';
+  if (s.contains('/')) return s;
+
+  final ipv4 = RegExp(r'^\d{1,3}(\.\d{1,3}){3}$');
+  if (!ipv4.hasMatch(s)) return s;
+
+  final parts = s.split('.');
+  if (parts.length != 4) return s;
+
+  for (final p in parts) {
+    final n = int.tryParse(p);
+    if (n == null || n < 0 || n > 255) return s;
+  }
+
+  final last = int.parse(parts[3]);
+  if (last == 0) return '/24';
+  return '/32';
+}
+/* SCANX_V16C_CIDR_END */
