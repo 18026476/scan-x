@@ -7,20 +7,41 @@ import 'package:scanx_app/core/utils/text_sanitizer.dart';
 import 'package:scanx_app/core/utils/text_sanitize.dart';
 
 class PdfReportService {
-  String _s(dynamic v) => scanxTextSafe((v ?? '').toString());
+  
+  /* SCANX_V16C_PDF_ASCII_BEGIN */
+  // V16C: Force ASCII-safe output to avoid Helvetica unicode warnings and "garbage" glyphs.
+    // V16C: Force ASCII-safe output to avoid Helvetica unicode warnings and "garbage" glyphs.
+  String _safe(dynamic v) {
+    var s = scanxTextSafe((v ?? '').toString());
 
+    // Common offenders from Windows PDF logs:
+    // - (U+2014), - (U+2013), € (U+20AC), ™ (U+2122), and replacement char � (U+FFFD)
+    s = s
+        .replaceAll('\u2014', '-')     // em dash
+        .replaceAll('\u2013', '-')     // en dash
+        .replaceAll('\u20AC', 'EUR')   // euro sign
+        .replaceAll('\u2122', 'TM')    // trademark
+        .replaceAll('\uFFFD', '');     // replacement char
+
+    // Normalize NBSP
+    s = s.replaceAll('\u00A0', ' ');
+
+    return s;
+  }
+  /* SCANX_V16C_PDF_ASCII_END */
   Future<Uint8List> buildReport({required Map<String, dynamic> reportJson}) async {
+
     final doc = pw.Document();
 
     final meta = (reportJson['scanMeta'] as Map?)?.cast<String, dynamic>() ?? <String, dynamic>{};
-    final scanTimeUtc = _s(meta['scanTimeUtc'] ?? DateTime.now().toUtc().toIso8601String());
-    final targetCidr  = _s(meta['targetCidr'] ?? '-');
-    final scanMode    = _s(meta['scanMode'] ?? '-');
+    final scanTimeUtc = _safe(meta['scanTimeUtc'] ?? DateTime.now().toUtc().toIso8601String());
+    final targetCidr  = _safe(meta['targetCidr'] ?? '-');
+    final scanMode    = _safe(meta['scanMode'] ?? '-');
 
     final riskScore = (reportJson['riskScore'] as Map?)?.cast<String, dynamic>() ?? <String, dynamic>{};
-    final riskLabel = _s(riskScore['label'] ?? riskScore['rating'] ?? 'Low');
-    final riskValue = _s(riskScore['risk'] ?? riskScore['score'] ?? 0);
-    final healthVal = _s(riskScore['health'] ?? 100);
+    final riskLabel = _safe(riskScore['label'] ?? riskScore['rating'] ?? 'Low');
+    final riskValue = _safe(riskScore['risk'] ?? riskScore['score'] ?? 0);
+    final healthVal = _safe(riskScore['health'] ?? 100);
 
     final findings = (reportJson['findings'] as List?)?.cast<dynamic>() ?? const <dynamic>[];
     final devices  = (reportJson['devicesInScan'] as List?)?.cast<dynamic>() ?? const <dynamic>[];
@@ -79,7 +100,7 @@ class PdfReportService {
 
           // Severity distribution (ASCII-safe)
           _sectionTitle('Severity Distribution'),
-          _asciiBarChart(severityDist),
+          _severityBarChart(severityDist),
 
           // Settings snapshot
           _sectionTitle('Settings Snapshot'),
@@ -125,12 +146,12 @@ class PdfReportService {
   pw.Widget _findingCard(dynamic fDyn) {
     final m = (fDyn is Map) ? fDyn.cast<String, dynamic>() : <String, dynamic>{};
 
-    final title = _s(m['title'] ?? 'Finding');
-    final severity = _s(m['severity'] ?? '-');
-    final status = _s(m['status'] ?? '-');
-    final deviceIp = _s(m['deviceIp'] ?? '-');
-    final evidence = _s(m['evidence'] ?? '');
-    final rec = _s(m['recommendation'] ?? '');
+    final title = _safe(m['title'] ?? 'Finding');
+    final severity = _safe(m['severity'] ?? '-');
+    final status = _safe(m['status'] ?? '-');
+    final deviceIp = _safe(m['deviceIp'] ?? '-');
+    final evidence = _safe(m['evidence'] ?? '');
+    final rec = _safe(m['recommendation'] ?? '');
 
     return pw.Container(
       margin: const pw.EdgeInsets.only(bottom: 10),
@@ -172,9 +193,9 @@ class PdfReportService {
       if (d is! Map) continue;
       final m = d.cast<String, dynamic>();
 
-      final ip = _s(m['ip'] ?? '-');
-      final name = _s(m['name'] ?? '-');
-      final risk = _s(m['risk'] ?? '-');
+      final ip = _safe(m['ip'] ?? '-');
+      final name = _safe(m['name'] ?? '-');
+      final risk = _safe(m['risk'] ?? '-');
 
       final ports = (m['openPorts'] is List)
           ? (m['openPorts'] as List).map((x) => x.toString()).toList()
@@ -201,12 +222,12 @@ class PdfReportService {
       if (d is! Map) continue;
       final m = d.cast<String, dynamic>();
 
-      final ip = _s(m['ip'] ?? '-');
-      final name = _s(m['name'] ?? '-');
-      final risk = _s(m['risk'] ?? '-');
+      final ip = _safe(m['ip'] ?? '-');
+      final name = _safe(m['name'] ?? '-');
+      final risk = _safe(m['risk'] ?? '-');
 
       final recs = (m['recommendations'] is List)
-          ? (m['recommendations'] as List).map((x) => _s(x)).where((x) => x.trim().isNotEmpty).toList()
+          ? (m['recommendations'] as List).map((x) => _safe(x)).where((x) => x.trim().isNotEmpty).toList()
           : const <String>[];
 
       blocks.add(
@@ -220,7 +241,7 @@ class PdfReportService {
           child: pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              pw.Text('$name ($ip) — Risk: $risk', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
+              pw.Text('$name ($ip) - Risk: $risk', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
               pw.SizedBox(height: 4),
               if (recs.isEmpty)
                 pw.Text('No specific recommendations for this device.', style: const pw.TextStyle(fontSize: 9))
@@ -252,8 +273,8 @@ class PdfReportService {
       if (e is! Map) continue;
       final m = e.cast<String, dynamic>();
       rows.add(pw.TableRow(children: [
-        _td(_s(m['port'] ?? '-')),
-        _td(_s(m['count'] ?? '-')),
+        _td(_safe(m['port'] ?? '-')),
+        _td(_safe(m['count'] ?? '-')),
       ]));
     }
 
@@ -278,7 +299,7 @@ class PdfReportService {
       rows.add(
         pw.Row(
           children: [
-            pw.SizedBox(width: 90, child: pw.Text(_s(k), style: const pw.TextStyle(fontSize: 9))),
+            pw.SizedBox(width: 90, child: pw.Text(_safe(k), style: const pw.TextStyle(fontSize: 9))),
             pw.Expanded(child: pw.Text(barStr, style: const pw.TextStyle(fontSize: 9))),
             pw.SizedBox(width: 25, child: pw.Text(n.toString(), style: const pw.TextStyle(fontSize: 9))),
           ],
@@ -300,7 +321,7 @@ class PdfReportService {
         pw.Row(
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
           children: [
-            pw.Expanded(child: pw.Text(_s(k), style: const pw.TextStyle(fontSize: 9))),
+            pw.Expanded(child: pw.Text(_safe(k), style: const pw.TextStyle(fontSize: 9))),
             pw.Text(on ? 'ON' : 'OFF', style: const pw.TextStyle(fontSize: 9)),
           ],
         ),
@@ -316,7 +337,7 @@ class PdfReportService {
 
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
-      children: lines.map((t) => _dashBullet(_s(t))).toList(),
+      children: lines.map((t) => _dashBullet(_safe(t))).toList(),
     );
   }
 
@@ -334,4 +355,81 @@ class PdfReportService {
     padding: const pw.EdgeInsets.all(4),
     child: pw.Text(t, style: const pw.TextStyle(fontSize: 9)),
   );
+  /* SCANX_V16C_SEVERITY_BARCHART */
+  // V16C: Proper severity bar chart (grayscale, printer-friendly).
+  pw.Widget _severityBarChart(Map<String, dynamic> seriesDyn) {
+    if (seriesDyn.isEmpty) return pw.Text('No severity data.');
+
+    int maxVal = 0;
+    final normalized = <String, int>{};
+
+    seriesDyn.forEach((k, v) {
+      final key = _safe(k);
+      final n = (v is int) ? v : int.tryParse(v.toString()) ?? 0;
+      normalized[key] = n;
+      if (n > maxVal) maxVal = n;
+    });
+
+    // Sort: High/Critical first, then Medium, then Low, then others
+    final order = <String, int>{
+      'High/Critical': 0,
+      'High': 0,
+      'Critical': 0,
+      'Medium': 1,
+      'Low': 2,
+    };
+
+    final entries = normalized.entries.toList()
+      ..sort((a, b) {
+        final oa = order[a.key] ?? 9;
+        final ob = order[b.key] ?? 9;
+        if (oa != ob) return oa.compareTo(ob);
+        return b.value.compareTo(a.value);
+      });
+
+    final rows = <pw.Widget>[];
+
+    for (final e in entries) {
+      final label = e.key;
+      final n = e.value;
+      final frac = (maxVal == 0) ? 0.0 : (n / maxVal);
+
+      rows.add(
+        pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.center,
+          children: [
+            pw.SizedBox(width: 90, child: pw.Text(_safe(label), style: const pw.TextStyle(fontSize: 9))),
+            pw.Container(
+              width: 220,
+              height: 10,
+              decoration: pw.BoxDecoration(
+                color: PdfColors.grey300,
+                borderRadius: pw.BorderRadius.circular(2),
+              ),
+              child: pw.Align(
+                alignment: pw.Alignment.centerLeft,
+                child: pw.Container(
+                  width: 220 * frac,
+                  height: 10,
+                  decoration: pw.BoxDecoration(
+                    color: PdfColors.grey800,
+                    borderRadius: pw.BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+            ),
+            pw.SizedBox(width: 10),
+            pw.SizedBox(width: 30, child: pw.Text(n.toString(), style: const pw.TextStyle(fontSize: 9))),
+          ],
+        ),
+      );
+
+      rows.add(pw.SizedBox(height: 4));
+    }
+
+    rows.add(pw.SizedBox(height: 4));
+    rows.add(pw.Text('Legend: longer bars = more findings', style: const pw.TextStyle(fontSize: 8)));
+
+    return _box(pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: rows));
+  }
 }
