@@ -1,4 +1,4 @@
-﻿import 'dart:typed_data';
+import 'dart:typed_data';
 
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -15,7 +15,7 @@ class PdfReportService {
     var s = scanxTextSafe((v ?? '').toString());
 
     // Common offenders from Windows PDF logs:
-    // - (U+2014), - (U+2013), â‚¬ (U+20AC), â„¢ (U+2122), and replacement char ï¿½ (U+FFFD)
+    // - (U+2014), - (U+2013), € (U+20AC), ™ (U+2122), and replacement char � (U+FFFD)
     s = s
         .replaceAll('\u2014', '-')     // em dash
         .replaceAll('\u2013', '-')     // en dash
@@ -433,4 +433,3 @@ class PdfReportService {
     return _box(pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: rows));
   }
 }
-

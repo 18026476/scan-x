@@ -200,10 +200,9 @@ class _ScanScreenState extends State<ScanScreen> {
             onPressed: () async {
               if (_lastResult == null) return;
               final reportJson = ReportBuilder().buildReportJson(
-result: _lastResult!,
+                result: _lastResult!,
                 
-                
-                scanModeLabel: 'Scan',targetCidr: _lastResult!.target,
+                targetCidr: _lastResult!.target,
               );
               final bytes = await PdfReportService().buildReport(reportJson: reportJson);
               await Printing.layoutPdf(onLayout: (_) async => bytes);
@@ -660,7 +659,6 @@ class _GaugePainter extends CustomPainter {
         oldDelegate.majorTickColor != majorTickColor;
   }
 }
-
 
 
 
