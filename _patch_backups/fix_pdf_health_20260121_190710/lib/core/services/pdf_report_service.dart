@@ -35,11 +35,7 @@ class PdfReportService {
 
     final meta = (reportJson['scanMeta'] as Map?)?.cast<String, dynamic>() ?? <String, dynamic>{};
     final scanTimeUtc = _safe(meta['scanTimeUtc'] ?? DateTime.now().toUtc().toIso8601String());
-    final scanTimeLocal = _safe(meta['scanTimeLocal'] ?? DateTime.now().toLocal().toIso8601String());
-    final startedAtLocal = _safe(meta['startedAtLocal'] ?? '-');
-    final finishedAtLocal = _safe(meta['finishedAtLocal'] ?? '-');
-    final durationSec = _safe(meta['durationSec'] ?? '-');
-final targetCidr  = _safe(meta['targetCidr'] ?? '-');
+    final targetCidr  = _safe(meta['targetCidr'] ?? '-');
     final scanMode    = _safe(meta['scanMode'] ?? '-');
 
     final riskScore = (reportJson['riskScore'] as Map?)?.cast<String, dynamic>() ?? <String, dynamic>{};
@@ -437,8 +433,5 @@ final targetCidr  = _safe(meta['targetCidr'] ?? '-');
     return _box(pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: rows));
   }
 }
-
-
-
 
 

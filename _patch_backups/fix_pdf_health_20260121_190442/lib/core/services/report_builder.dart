@@ -13,18 +13,6 @@ class ReportBuilder {
   /// - topOpenPorts computed from all devices
   /// - severityDistribution computed from findings
   /// - mlInsights based on ALL devices found (client-safe, plain English)
-  int _scanxDashboardHealthScore(ScanResult r) {
-    int score = 100;
-    for (final h in r.hosts) {
-      if (h.risk == RiskLevel.high) score -= 15;
-      if (h.risk == RiskLevel.medium) score -= 7;
-      if (h.openPorts.length > 10) score -= 5;
-    }
-    if (score < 0) score = 0;
-    if (score > 100) score = 100;
-    return score;
-  }
-
   Map<String, dynamic> buildReportJson({
     required ScanResult result,
     required String scanModeLabel,
@@ -89,9 +77,9 @@ class ReportBuilder {
     // --- Score + label (self-contained so we donâ€™t depend on other services)
     final score = _scanxV16ComputeRiskScore(devicesInScan, findings);
     final rating = _scanxV16RiskLabel(score);
-    
-    final dashboardHealth = _scanxDashboardHealthScore(result);
-// --- Top ports
+    final health = (100 - score).clamp(0, 100);
+
+    // --- Top ports
     final topOpenPorts = _scanxV16TopPortsFromDevices(devicesInScan, topN: 10);
 
     // --- Severity distribution
@@ -133,17 +121,12 @@ class ReportBuilder {
       'finishedAtLocal': result.finishedAt.toLocal().toIso8601String(),
       'durationSec': result.finishedAt.difference(result.startedAt).inSeconds,
       'scanTimeUtc': nowUtc,
-      'targetCidr': scanxEnsureCidr(((targetCidr == null || targetCidr.trim().isEmpty) ? result.target : targetCidr.trim()).toString()),
+      'targetCidr': scanxEnsureCidr(((targetCidr == null || targetCidr.trim().isEmpty) ? '-' : targetCidr.trim()).toString()),
       'scanMode': scanModeLabel,
-    };
-
-    final scanSummary = <String, dynamic>{
-      'networkHealth': dashboardHealth,
     };
 
     return <String, dynamic>{
       'scanMeta': scanMeta,
-      'scanSummary': scanSummary,
 
       // Rating parity block (used by PDF)
       'riskScore': <String, dynamic>{
@@ -151,7 +134,7 @@ class ReportBuilder {
         'rating': rating,
         'risk': score,
         'label': rating,
-        'health': dashboardHealth,
+        'health': health,
       },
 
       'devicesInScan': devicesInScan,
@@ -444,8 +427,4 @@ String scanxEnsureCidr(String input) {
   return '/32';
 }
 /* SCANX_V16C_CIDR_END */
-
-
-
-
 
