@@ -1,151 +1,144 @@
-﻿// lib/core/services/settings_service.dart
+﻿import 'package:shared_preferences/shared_preferences.dart';
 
-/// Overall scan mode preset.
-/// Used to decide how aggressive / deep SCAN-X should scan.
-enum ScanMode {
-  performance, // fast, lighter scans
-  balanced,    // default
-  paranoid,    // slow but deepest
-}
+enum ScanMode { paranoid, balanced, performance }
 
-/// Holds all user-configurable scan settings for SCAN-X.
-class ScanSettings {
-  // ---------- Target / network ----------
-  final String defaultTargetCidr;
-
-  // ---------- Scan behaviour ----------
-  final ScanMode scanMode;
-  final bool hostDiscoveryEnabled; // use nmap -sn before port scans
-  final bool fullScanAllHosts;     // if false, deep-scan only top risky hosts
-  final int maxDeepHosts;          // max hosts to full-scan (1–50 realistic)
-  final int portsPerPhase;         // base ports per phase for dynamic planner
-
-  // ---------- Risk model ----------
-  /// High if host has >= highRiskHighPorts "high-risk" ports OR
-  /// >= highRiskTotalPorts total open ports.
-  final int highRiskHighPorts;
-  final int highRiskTotalPorts;
-
-  /// Medium if host has >= mediumRiskHighPorts high-risk ports OR
-  /// >= mediumRiskTotalPorts total open ports (and not already HIGH).
-  final int mediumRiskHighPorts;
-  final int mediumRiskTotalPorts;
-
-  /// Custom high-risk ports (e.g. 21, 23, 445, 3389, 1900, etc.)
-  final List<int> customHighRiskPorts;
-
-  // ---------- Data retention / automation ----------
-  final bool keepOnlyLastScan;       // if false, you can later keep history
-  final bool autoQuickScanOnStartup; // run Quick Scan when app starts
-
-  const ScanSettings({
-    // target
-    required this.defaultTargetCidr,
-
-    // behaviour
-    required this.scanMode,
-    required this.hostDiscoveryEnabled,
-    required this.fullScanAllHosts,
-    required this.maxDeepHosts,
-    required this.portsPerPhase,
-
-    // risk
-    required this.highRiskHighPorts,
-    required this.highRiskTotalPorts,
-    required this.mediumRiskHighPorts,
-    required this.mediumRiskTotalPorts,
-    required this.customHighRiskPorts,
-
-    // retention / automation
-    required this.keepOnlyLastScan,
-    required this.autoQuickScanOnStartup,
-  });
-
-  /// Default values used when the app starts for the first time.
-  factory ScanSettings.defaults() {
-    return const ScanSettings(
-      // Target
-      defaultTargetCidr: '192.168.1.0/24',
-
-      // Behaviour – "balanced" preset
-      scanMode: ScanMode.balanced,
-      hostDiscoveryEnabled: true,
-      fullScanAllHosts: false,
-      maxDeepHosts: 10,
-      portsPerPhase: 3000,
-
-      // Risk thresholds
-      highRiskHighPorts: 3,
-      highRiskTotalPorts: 15,
-      mediumRiskHighPorts: 1,
-      mediumRiskTotalPorts: 5,
-
-      // Common high-risk ports
-      customHighRiskPorts: [21, 23, 445, 3389, 1900],
-
-      // Retention / automation
-      keepOnlyLastScan: true,
-      autoQuickScanOnStartup: false,
-    );
-  }
-
-  /// Copy-with pattern so the UI can update just a few fields.
-  ScanSettings copyWith({
-    String? defaultTargetCidr,
-
-    ScanMode? scanMode,
-    bool? hostDiscoveryEnabled,
-    bool? fullScanAllHosts,
-    int? maxDeepHosts,
-    int? portsPerPhase,
-
-    int? highRiskHighPorts,
-    int? highRiskTotalPorts,
-    int? mediumRiskHighPorts,
-    int? mediumRiskTotalPorts,
-    List<int>? customHighRiskPorts,
-
-    bool? keepOnlyLastScan,
-    bool? autoQuickScanOnStartup,
-  }) {
-    return ScanSettings(
-      defaultTargetCidr: defaultTargetCidr ?? this.defaultTargetCidr,
-
-      scanMode: scanMode ?? this.scanMode,
-      hostDiscoveryEnabled:
-      hostDiscoveryEnabled ?? this.hostDiscoveryEnabled,
-      fullScanAllHosts: fullScanAllHosts ?? this.fullScanAllHosts,
-      maxDeepHosts: maxDeepHosts ?? this.maxDeepHosts,
-      portsPerPhase: portsPerPhase ?? this.portsPerPhase,
-
-      highRiskHighPorts: highRiskHighPorts ?? this.highRiskHighPorts,
-      highRiskTotalPorts: highRiskTotalPorts ?? this.highRiskTotalPorts,
-      mediumRiskHighPorts:
-      mediumRiskHighPorts ?? this.mediumRiskHighPorts,
-      mediumRiskTotalPorts:
-      mediumRiskTotalPorts ?? this.mediumRiskTotalPorts,
-      customHighRiskPorts:
-      customHighRiskPorts ?? List<int>.from(this.customHighRiskPorts),
-
-      keepOnlyLastScan: keepOnlyLastScan ?? this.keepOnlyLastScan,
-      autoQuickScanOnStartup:
-      autoQuickScanOnStartup ?? this.autoQuickScanOnStartup,
-    );
-  }
-}
-
-/// Simple in-memory singleton for settings.
-/// Later you can back this with SharedPreferences / a file for persistence.
 class SettingsService {
-  SettingsService._internal();
   static final SettingsService _instance = SettingsService._internal();
   factory SettingsService() => _instance;
+  SettingsService._internal();
 
-  ScanSettings _settings = ScanSettings.defaults();
+  static const _prefix = 'scanx.';
 
-  ScanSettings get settings => _settings;
+  static const _kPerformanceMode = '${_prefix}performanceMode';
+  static const _kScanMode = '${_prefix}scanMode';
 
-  void updateSettings(ScanSettings newSettings) {
-    _settings = newSettings;
+  static const _kContinuousMonitoring = '${_prefix}continuousMonitoring';
+  static const _kScanFrequency = '${_prefix}scanFrequency';
+
+  static const _kAutoScanOnLaunch = '${_prefix}autoScanOnLaunch';
+  static const _kHostsPerScan = '${_prefix}hostsPerScan';
+  static const _kKeepScreenAwake = '${_prefix}keepScreenAwake';
+
+  static const _kAutoStartOnBoot = '${_prefix}autoStartOnBoot';
+
+  static const _kAutoUpdateApp = '${_prefix}autoUpdateApp';
+  static const _kNotifyBeforeUpdate = '${_prefix}notifyBeforeUpdate';
+  static const _kBetaUpdates = '${_prefix}betaUpdates';
+
+  static const _kTwoFactorEnabled = '${_prefix}twoFactorEnabled';
+  static const _kTwoFactorSecret = '${_prefix}twoFactorSecret';
+  static const _kTwoFactorVerifiedUntilMs =
+      '${_prefix}twoFactorVerifiedUntilMs';
+
+  late SharedPreferences _prefs;
+
+  Future<void> init() async {
+    _prefs = await SharedPreferences.getInstance();
+  }
+
+  // ---------------- Performance / Scan Mode ----------------
+
+  int get performanceMode => _prefs.getInt(_kPerformanceMode) ?? 1;
+
+  Future<void> setPerformanceMode(int value) async {
+    await _prefs.setInt(_kPerformanceMode, value);
+
+    if (value == 0) {
+      await setScanMode(ScanMode.paranoid);
+    } else if (value == 2) {
+      await setScanMode(ScanMode.performance);
+    } else {
+      await setScanMode(ScanMode.balanced);
+    }
+  }
+
+  ScanMode get scanMode {
+    final v = _prefs.getInt(_kScanMode) ?? 1;
+    return ScanMode.values[v];
+  }
+
+  Future<void> setScanMode(ScanMode mode) =>
+      _prefs.setInt(_kScanMode, mode.index);
+
+  // ---------------- Continuous Monitoring ----------------
+
+  bool get continuousMonitoring =>
+      _prefs.getBool(_kContinuousMonitoring) ?? false;
+
+  Future<void> setContinuousMonitoring(bool value) =>
+      _prefs.setBool(_kContinuousMonitoring, value);
+
+  int get scanFrequency => _prefs.getInt(_kScanFrequency) ?? 0;
+
+  Future<void> setScanFrequency(int value) =>
+      _prefs.setInt(_kScanFrequency, value);
+
+  // ---------------- Scan Behaviour ----------------
+
+  bool get autoScanOnLaunch => _prefs.getBool(_kAutoScanOnLaunch) ?? false;
+
+  Future<void> setAutoScanOnLaunch(bool value) =>
+      _prefs.setBool(_kAutoScanOnLaunch, value);
+
+  int get hostsPerScan => _prefs.getInt(_kHostsPerScan) ?? 0;
+
+  Future<void> setHostsPerScan(int value) =>
+      _prefs.setInt(_kHostsPerScan, value);
+
+  bool get keepScreenAwake => _prefs.getBool(_kKeepScreenAwake) ?? false;
+
+  Future<void> setKeepScreenAwake(bool value) =>
+      _prefs.setBool(_kKeepScreenAwake, value);
+
+  // ---------------- Startup ----------------
+
+  bool get autoStartOnBoot => _prefs.getBool(_kAutoStartOnBoot) ?? false;
+
+  Future<void> setAutoStartOnBoot(bool value) =>
+      _prefs.setBool(_kAutoStartOnBoot, value);
+
+  // ---------------- Updates ----------------
+
+  bool get autoUpdateApp => _prefs.getBool(_kAutoUpdateApp) ?? false;
+
+  Future<void> setAutoUpdateApp(bool value) =>
+      _prefs.setBool(_kAutoUpdateApp, value);
+
+  bool get notifyBeforeUpdate =>
+      _prefs.getBool(_kNotifyBeforeUpdate) ?? true;
+
+  Future<void> setNotifyBeforeUpdate(bool value) =>
+      _prefs.setBool(_kNotifyBeforeUpdate, value);
+
+  bool get betaUpdates => _prefs.getBool(_kBetaUpdates) ?? false;
+
+  Future<void> setBetaUpdates(bool value) =>
+      _prefs.setBool(_kBetaUpdates, value);
+
+  // ---------------- Two-Factor Authentication ----------------
+
+  bool get twoFactorEnabled => _prefs.getBool(_kTwoFactorEnabled) ?? false;
+
+  Future<void> setTwoFactorEnabled(bool value) =>
+      _prefs.setBool(_kTwoFactorEnabled, value);
+
+  String get twoFactorSecret =>
+      _prefs.getString(_kTwoFactorSecret) ?? '';
+
+  Future<void> setTwoFactorSecret(String value) =>
+      _prefs.setString(_kTwoFactorSecret, value);
+
+  DateTime? get twoFactorVerifiedUntil {
+    final ms = _prefs.getInt(_kTwoFactorVerifiedUntilMs);
+    if (ms == null) return null;
+    return DateTime.fromMillisecondsSinceEpoch(ms);
+  }
+
+  Future<void> setTwoFactorVerifiedUntil(DateTime? value) {
+    if (value == null) {
+      return _prefs.remove(_kTwoFactorVerifiedUntilMs);
+    }
+    return _prefs.setInt(
+        _kTwoFactorVerifiedUntilMs, value.millisecondsSinceEpoch);
   }
 }

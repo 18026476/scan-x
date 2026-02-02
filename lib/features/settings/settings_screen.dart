@@ -1,4 +1,4 @@
-// lib/features/settings/settings_screen.dart
+﻿// lib/features/settings/settings_screen.dart
 
 import 'package:flutter/material.dart';
 import 'package:scanx_app/core/services/settings_service.dart';
@@ -663,6 +663,22 @@ class _SettingsScreenState extends State<SettingsScreen>
                 if (v == null) return;
                 setState(() => performanceMode = v);
                 SettingsService().setPerformanceMode(v);
+                // keep scan profile in sync
+                if (v == 0) {
+                  SettingsService().setScanMode(ScanMode.paranoid);
+                } else if (v == 2) {
+                  SettingsService().setScanMode(ScanMode.performance);
+                } else {
+                  SettingsService().setScanMode(ScanMode.balanced);
+                }
+                // keep scan profile in sync
+                if (v == 0) {
+                  SettingsService().setScanMode(ScanMode.paranoid);
+                } else if (v == 2) {
+                  SettingsService().setScanMode(ScanMode.performance);
+                } else {
+                  SettingsService().setScanMode(ScanMode.balanced);
+                }
               },
             ),
             RadioListTile<int>(
@@ -673,6 +689,22 @@ class _SettingsScreenState extends State<SettingsScreen>
                 if (v == null) return;
                 setState(() => performanceMode = v);
                 SettingsService().setPerformanceMode(v);
+                // keep scan profile in sync
+                if (v == 0) {
+                  SettingsService().setScanMode(ScanMode.paranoid);
+                } else if (v == 2) {
+                  SettingsService().setScanMode(ScanMode.performance);
+                } else {
+                  SettingsService().setScanMode(ScanMode.balanced);
+                }
+                // keep scan profile in sync
+                if (v == 0) {
+                  SettingsService().setScanMode(ScanMode.paranoid);
+                } else if (v == 2) {
+                  SettingsService().setScanMode(ScanMode.performance);
+                } else {
+                  SettingsService().setScanMode(ScanMode.balanced);
+                }
               },
             ),
             RadioListTile<int>(
@@ -683,6 +715,22 @@ class _SettingsScreenState extends State<SettingsScreen>
                 if (v == null) return;
                 setState(() => performanceMode = v);
                 SettingsService().setPerformanceMode(v);
+                // keep scan profile in sync
+                if (v == 0) {
+                  SettingsService().setScanMode(ScanMode.paranoid);
+                } else if (v == 2) {
+                  SettingsService().setScanMode(ScanMode.performance);
+                } else {
+                  SettingsService().setScanMode(ScanMode.balanced);
+                }
+                // keep scan profile in sync
+                if (v == 0) {
+                  SettingsService().setScanMode(ScanMode.paranoid);
+                } else if (v == 2) {
+                  SettingsService().setScanMode(ScanMode.performance);
+                } else {
+                  SettingsService().setScanMode(ScanMode.balanced);
+                }
               },
             ),
           ],
@@ -936,3 +984,5 @@ class _SettingsScreenState extends State<SettingsScreen>
     );
   }
 }
+
+

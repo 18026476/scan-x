@@ -1,4 +1,4 @@
-﻿import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -13,9 +13,7 @@ class SettingsService {
   static const _kScanModeIndex = '${_prefix}scanModeIndex';
 
   // Keys
-  static const _kTwoFactor = '\$\{_prefix\}twoFactorEnabled';
-  static const _kTwoFactorSecret = '\$\{_prefix\}twoFactorSecret';
-  static const _kTwoFactorVerifiedUntilMs = '\$\{_prefix\}twoFactorVerifiedUntilMs';
+  static const _kTwoFactor = '${_prefix}twoFactorEnabled';
   static const _kAppTheme = '${_prefix}appTheme';
   static const _kAppLanguage = '${_prefix}appLanguage';
 
@@ -109,47 +107,7 @@ class SettingsService {
   static Future<SettingsService> init() async {
     if (_instance != null) return _instance!;
     final prefs = await SharedPreferences.getInstance();
-    
-    // SCANX_MIGRATE_UPDATE_PREF_KEYS
-    // Canonical keys we expect to exist:
-    //   _kAutoUpdateApp        (likely 'scanx_autoUpdateApp')
-    //   _kNotifyBeforeUpdate   (likely 'scanx_notifyBeforeUpdate')
-    //
-    // Legacy keys observed in Windows prefs:
-    //   autoUpdateApp
-    //   notifyBeforeUpdate
-    // Also possible old variants:
-    //   scanx_auto_update_app / scanx_notify_before_update
-    bool? _readLegacyBool(List<String> keys) {
-      for (final k in keys) {
-        if (prefs.containsKey(k)) return prefs.getBool(k);
-      }
-      return null;
-    }
-
-    // NOTE: do NOT overwrite if the canonical key already exists.
-    if (!prefs.containsKey(_kAutoUpdateApp)) {
-      final v = _readLegacyBool(const <String>[
-        'autoUpdateApp',
-        'notifyAutoUpdateApp', // harmless fallback
-        'scanx_auto_update_app',
-        'scanx.auto_update_app',
-        'scanx_autoUpdateApp',
-      ]);
-      await prefs.setBool(_kAutoUpdateApp, v ?? true);
-    }
-
-    if (!prefs.containsKey(_kNotifyBeforeUpdate)) {
-      final v = _readLegacyBool(const <String>[
-        'notifyBeforeUpdate',
-        'scanx_notify_before_update',
-        'scanx.notify_before_update',
-        'scanx_notifyBeforeUpdate',
-      ]);
-      await prefs.setBool(_kNotifyBeforeUpdate, v ?? true);
-    }
-    // SCANX_MIGRATE_UPDATE_PREF_KEYS_END
-_instance = SettingsService._(prefs);
+    _instance = SettingsService._(prefs);
 
     // Initialize theme notifier from saved preference
     _instance!._themeModeNotifier.value = _instance!.themeMode;
@@ -425,19 +383,8 @@ _instance = SettingsService._(prefs);
 
   /// 0 = balanced, 1 = performance, 2 = battery saver
   int get performanceMode => _prefs.getInt(_kPerformanceMode) ?? 1;
-  Future<void> setPerformanceMode(int value) async {
-    await _prefs.setInt(_kPerformanceMode, value);
-
-    // Keep ScanMode in sync:
-    // 0 battery saver -> paranoid, 1 balanced -> balanced, 2 performance -> performance
-    if (value == 0) {
-      await setScanMode(ScanMode.paranoid);
-    } else if (value == 2) {
-      await setScanMode(ScanMode.performance);
-    } else {
-      await setScanMode(ScanMode.balanced);
-    }
-  }
+  Future<void> setPerformanceMode(int value) =>
+      _prefs.setInt(_kPerformanceMode, value);
 
   bool get autoStartOnBoot => _prefs.getBool(_kAutoStartOnBoot) ?? false;
   Future<void> setAutoStartOnBoot(bool value) =>
@@ -639,7 +586,3 @@ class ScanSettings {
     );
   }
 }
-
-
-
-

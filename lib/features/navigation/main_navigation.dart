@@ -1,14 +1,20 @@
-// lib/features/navigation/main_navigation.dart
+﻿// lib/features/navigation/main_navigation.dart
+
+import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:scanx_app/features/dashboard/dashboard_screen.dart';
-import 'package:scanx_app/features/scan/scan_screen.dart';
-import 'package:scanx_app/features/devices/devices_screen.dart';
-import 'package:scanx_app/features/settings/settings_screen.dart';
+import 'package:scanx_app/core/services/post_scan_pipeline.dart';
 import 'package:scanx_app/core/services/scan_service.dart';
 import 'package:scanx_app/core/services/settings_service.dart';
-import 'dart:async';
-import 'package:scanx_app/core/services/post_scan_pipeline.dart';
+import 'package:scanx_app/core/services/two_factor_service.dart';
+import 'package:scanx_app/core/services/two_factor_store.dart';
+import 'package:scanx_app/core/services/update_service.dart';
+import 'package:scanx_app/core/services/windows_startup_service.dart';
+import 'package:scanx_app/features/dashboard/dashboard_screen.dart';
+import 'package:scanx_app/features/devices/devices_screen.dart';
+import 'package:scanx_app/features/scan/scan_screen.dart';
+import 'package:scanx_app/features/settings/settings_screen.dart';
+
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
 
@@ -18,10 +24,8 @@ class MainNavigation extends StatefulWidget {
 
 class _MainNavigationState extends State<MainNavigation> {
   Timer? _autoScanTimer;
-
   int _currentIndex = 0;
 
-  // 4 tabs: Dashboard, Scan, Devices, Settings
   final List<Widget> _pages = const <Widget>[
     DashboardScreen(),
     ScanScreen(),
@@ -33,39 +37,125 @@ class _MainNavigationState extends State<MainNavigation> {
   void initState() {
     super.initState();
 
-    // Best-effort continuous monitoring (settings-gated).
-    // Runs periodic Quick Smart scans using the saved default target.
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _enforceTwoFactorIfEnabled();
+      await _applyWindowsStartupSetting();
+      await _runAutoScanOnLaunchIfEnabled();
+      await _checkForUpdatesIfEnabled();
+    });
+
+    _startContinuousMonitoringIfEnabled();
+  }
+
+  void _startContinuousMonitoringIfEnabled() {
     final s = SettingsService();
-    if (s.continuousMonitoring) {
-      final minutes = _scanFrequencyMinutes(s.scanFrequency);
-      if (minutes > 0) {
-        _autoScanTimer?.cancel();
-        _autoScanTimer = Timer.periodic(Duration(minutes: minutes), (_) async {
-          try {
-            final r = await ScanService().runQuickSmartScanFromDefaults();
-            if (mounted) {
-              await PostScanPipeline.handleScanComplete(context, result: r, isAutoScan: true);
-            }if (mounted) {
-              await PostScanPipeline.handleScanComplete(context, result: r, isAutoScan: true);
-            }} catch (_) {
-            // Silent in release; continuous monitoring is best-effort.
-          }
-        });
-      }
-    }
+    if (!s.continuousMonitoring) return;
+
+    final minutes = _scanFrequencyMinutes(s.scanFrequency);
+    if (minutes <= 0) return;
+
+    _autoScanTimer?.cancel();
+    _autoScanTimer = Timer.periodic(Duration(minutes: minutes), (_) async {
+      try {
+        final r = await ScanService().runQuickSmartScanFromDefaults();
+        if (!mounted) return;
+        await PostScanPipeline.handleScanComplete(
+          context,
+          result: r,
+          isAutoScan: true,
+        );
+      } catch (_) {}
+    });
   }
 
   int _scanFrequencyMinutes(int idx) {
-    // 0=manual, 1=hourly, 2=6-hourly, 3=daily
+    // 0=on-demand, 1=every 15m, 2=hourly, 3=daily
     switch (idx) {
       case 1:
-        return 60;
+        return 15;
       case 2:
-        return 360;
+        return 60;
       case 3:
         return 1440;
       default:
         return 0;
+    }
+  }
+
+  Future<void> _runAutoScanOnLaunchIfEnabled() async {
+    final s = SettingsService();
+    if (!s.autoScanOnLaunch) return;
+
+    try {
+      final r = await ScanService().runQuickSmartScanFromDefaults();
+      if (!mounted) return;
+      await PostScanPipeline.handleScanComplete(
+        context,
+        result: r,
+        isAutoScan: true,
+      );
+    } catch (_) {}
+  }
+
+  Future<void> _applyWindowsStartupSetting() async {
+    final s = SettingsService();
+    try {
+      if (s.autoStartOnBoot) {
+        await WindowsStartupService.enable();
+      } else {
+        await WindowsStartupService.disable();
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _checkForUpdatesIfEnabled() async {
+    final s = SettingsService();
+    if (!s.autoUpdateApp) return;
+
+    try {
+      await UpdateService.checkAndHandleUpdate(
+        context,
+        promptUser: s.notifyBeforeUpdate,
+        useBetaChannel: s.betaUpdates,
+      );
+    } catch (_) {}
+  }
+
+  Future<void> _enforceTwoFactorIfEnabled() async {
+    final enabled = await TwoFactorStore.isEnabled();
+    if (!enabled) return;
+
+    final secret = await TwoFactorService.ensureSecretExists();
+
+    final until = await TwoFactorStore.getVerifiedUntil();
+    if (until != null && until.isAfter(DateTime.now())) return;
+
+    if (!mounted) return;
+
+    if (secret.isNotEmpty) {
+      await showDialog<void>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Two-factor setup'),
+          content: SelectableText(
+            'Add this secret to an authenticator app (TOTP):\n\n$secret\n\n'
+            'Then enter a 6-digit code to continue.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final ok = await TwoFactorService.promptForCode(context);
+    if (ok) {
+      await TwoFactorStore.setVerifiedUntil(
+        DateTime.now().add(const Duration(hours: 12)),
+      );
     }
   }
 
@@ -75,11 +165,8 @@ class _MainNavigationState extends State<MainNavigation> {
     super.dispose();
   }
 
-
   void _onItemTapped(int index) {
-    setState(() {
-      _currentIndex = index;
-    });
+    setState(() => _currentIndex = index);
   }
 
   @override

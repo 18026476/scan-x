@@ -13,9 +13,7 @@ class SettingsService {
   static const _kScanModeIndex = '${_prefix}scanModeIndex';
 
   // Keys
-  static const _kTwoFactor = '\$\{_prefix\}twoFactorEnabled';
-  static const _kTwoFactorSecret = '\$\{_prefix\}twoFactorSecret';
-  static const _kTwoFactorVerifiedUntilMs = '\$\{_prefix\}twoFactorVerifiedUntilMs';
+  static const _kTwoFactor = '${_prefix}twoFactorEnabled';
   static const _kAppTheme = '${_prefix}appTheme';
   static const _kAppLanguage = '${_prefix}appLanguage';
 
@@ -425,19 +423,8 @@ _instance = SettingsService._(prefs);
 
   /// 0 = balanced, 1 = performance, 2 = battery saver
   int get performanceMode => _prefs.getInt(_kPerformanceMode) ?? 1;
-  Future<void> setPerformanceMode(int value) async {
-    await _prefs.setInt(_kPerformanceMode, value);
-
-    // Keep ScanMode in sync:
-    // 0 battery saver -> paranoid, 1 balanced -> balanced, 2 performance -> performance
-    if (value == 0) {
-      await setScanMode(ScanMode.paranoid);
-    } else if (value == 2) {
-      await setScanMode(ScanMode.performance);
-    } else {
-      await setScanMode(ScanMode.balanced);
-    }
-  }
+  Future<void> setPerformanceMode(int value) =>
+      _prefs.setInt(_kPerformanceMode, value);
 
   bool get autoStartOnBoot => _prefs.getBool(_kAutoStartOnBoot) ?? false;
   Future<void> setAutoStartOnBoot(bool value) =>
@@ -639,7 +626,4 @@ class ScanSettings {
     );
   }
 }
-
-
-
 

@@ -43,24 +43,16 @@ class PdfReportService {
     final doc = pw.Document();
 
     final meta = (reportJson['scanMeta'] as Map?)?.cast<String, dynamic>() ?? <String, dynamic>{};
-
-    final scanTimeUtcRaw =
-        (meta['scanTimeUtc'] ?? DateTime.now().toUtc().toIso8601String()).toString();
-    final scanTimeLocalRaw =
-        (meta['scanTimeLocal'] ?? DateTime.now().toLocal().toIso8601String()).toString();
-
-    final utcDt = DateTime.tryParse(scanTimeUtcRaw) ?? DateTime.now().toUtc();
-    final localDt = DateTime.tryParse(scanTimeLocalRaw) ?? utcDt.toLocal();
-
-    final scanTimeUtc = _safe(utcDt.toUtc().toIso8601String());
-    final scanTimeLocal = _safe(localDt.toLocal().toIso8601String());
-
-    final startedAtLocal = _safe(meta['startedAtLocal'] ?? '-');
+        final scanTimeUtcRaw = (meta['scanTimeUtc'] ?? DateTime.now().toUtc().toIso8601String()).toString();
+    final _scanUtcDt = DateTime.tryParse(scanTimeUtcRaw) ?? DateTime.now().toUtc();
+    final scanTimeUtc = _safe(_scanUtcDt.toUtc().toIso8601String());
+    final scanTimeLocal = _safe(_scanUtcDt.toLocal().toIso8601String());final startedAtLocal = _safe(meta['startedAtLocal'] ?? '-');
     final finishedAtLocal = _safe(meta['finishedAtLocal'] ?? '-');
     final durationSec = _safe(meta['durationSec'] ?? '-');
+final targetCidr  = _safe(meta['targetCidr'] ?? '-');
+    final scanMode    = _safe(meta['scanMode'] ?? '-');
 
-    final targetCidr = _safe(meta['targetCidr'] ?? '-');
-    final scanMode = _safe(meta['scanMode'] ?? '-');final riskScore = (reportJson['riskScore'] as Map?)?.cast<String, dynamic>() ?? <String, dynamic>{};
+    final riskScore = (reportJson['riskScore'] as Map?)?.cast<String, dynamic>() ?? <String, dynamic>{};
     final riskLabel = _safe(riskScore['label'] ?? riskScore['rating'] ?? 'Low');
     final riskValue = _safe(riskScore['risk'] ?? riskScore['score'] ?? 0);
     final healthVal = _safe(riskScore['health'] ?? 100);
@@ -85,13 +77,7 @@ class PdfReportService {
 
           pw.Text('Scan Time (Local): $scanTimeLocal'),
 
-          pw.Text('Scan Time (Local): '),
-          pw.Text('Scan Time (Local): '),
-          pw.Text('Scan Time (UTC): '),
-          if (startedAtLocal != '-' && finishedAtLocal != '-') pw.Text('Scan Window (Local):  -> '),
-          if (durationSec.toString() != '-' && durationSec.toString() != '') pw.Text('Duration (sec): '),
-          if (startedAtLocal != '-' && finishedAtLocal != '-') pw.Text('Scan Window (Local):  -> '),
-          if (durationSec.toString() != '-' && durationSec.toString() != '') pw.Text('Duration (sec): '),
+          pw.Text('Scan Time (UTC): $scanTimeUtc'),
           pw.Text('Target CIDR: $targetCidr'),
           pw.Text('Scan Mode: $scanMode'),
           pw.SizedBox(height: 10),
@@ -463,9 +449,6 @@ class PdfReportService {
     return _box(pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: rows));
   }
 }
-
-
-
 
 
 

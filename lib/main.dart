@@ -24,11 +24,11 @@ class ScanXApp extends StatelessWidget {
 
         return KeyboardStabilizer(
       child: MaterialApp(
+        theme: ThemeData(),
           title: 'SCAN-X',
           debugShowCheckedModeBanner: false,
 
           themeMode: mode,
-          theme: _buildLightTheme(),
           darkTheme: isScanXDark ? _buildScanXDarkTheme() : _buildDarkTheme(),
 
           home: const MainNavigation(),
@@ -131,3 +131,8 @@ ThemeData _buildScanXDarkTheme() {
     ),
   );
 }
+
+
+
+
+

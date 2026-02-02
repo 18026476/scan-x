@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import 'package:scanx_app/core/utils/text_sanitize.dart';
 import 'package:scanx_app/core/services/scan_service.dart';
@@ -104,7 +104,7 @@ class DeviceDetailsScreen extends StatelessWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        '${p.port}/${p.protocol} €¢ ${p.serviceName}',
+                        '${p.port}/${p.protocol} â‚¬Â¢ ${p.serviceName}',
                         style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
                       ),
                     ),
@@ -226,4 +226,5 @@ class DeviceDetailsScreen extends StatelessWidget {
     );
   }
 }
+
 

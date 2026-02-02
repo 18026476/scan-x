@@ -5,6 +5,9 @@ import 'dart:convert';
 
 import 'dart:io';
 
+import 'package:wakelock_plus/wakelock_plus.dart';
+import 'package:scanx_app/core/scanner/ip_range.dart';
+
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -91,7 +94,8 @@ class ScanService {
 
     final settings = SettingsService().settings;
     final args = _buildQuickSmartArgs(target, settings);
-    final stdoutStr = await _runNmap(args);
+    final limitedArgs = await _applyHostLimitIfNeeded(List<String>.from(args), target);
+    final stdoutStr = await _withWakeLock(() => _runNmap(limitedArgs));
 
     final hosts = _parseNmapOutput(stdoutStr);
     final resolvedHosts = await _applyAiRiskScoring(hosts);
@@ -118,7 +122,8 @@ class ScanService {
 
     final settings = SettingsService().settings;
     final args = _buildSmartScanArgs(target, settings);
-    final stdoutStr = await _runNmap(args);
+    final limitedArgs = await _applyHostLimitIfNeeded(List<String>.from(args), target);
+    final stdoutStr = await _withWakeLock(() => _runNmap(limitedArgs));
 
     final hosts = _parseNmapOutput(stdoutStr);
     final resolvedHosts = await _applyAiRiskScoring(hosts);
@@ -145,7 +150,8 @@ class ScanService {
 
     final settings = SettingsService().settings;
     final args = _buildFullScanArgs(target, settings);
-    final stdoutStr = await _runNmap(args);
+    final limitedArgs = await _applyHostLimitIfNeeded(List<String>.from(args), target);
+    final stdoutStr = await _withWakeLock(() => _runNmap(limitedArgs));
 
     final hosts = _parseNmapOutput(stdoutStr);
     final resolvedHosts = await _applyAiRiskScoring(hosts);
@@ -163,6 +169,42 @@ class ScanService {
   }
 
   RiskLevel getRiskLevel(DetectedHost host) => host.risk;
+
+  // ---------- Host limiting + wake lock ----------
+
+  Future<List<String>> _applyHostLimitIfNeeded(List<String> args, String target) async {
+    try {
+      final maxHosts = SettingsService().hostsPerScan;
+      if (maxHosts <= 0) return args;
+
+      if (!target.contains('/')) return args;
+
+      final expanded = IpRange.expand(target);
+      if (expanded.length <= maxHosts) return args;
+
+      final limited = expanded.take(maxHosts).toList(growable: false);
+
+      final file = File('\\scanx_targets_\.txt');
+      await file.writeAsString(limited.join('\n'));
+
+      if (args.isNotEmpty && args.last == target) {
+        args.removeLast();
+      }
+      args.addAll(['-iL', file.path]);
+      return args;
+    } catch (_) {
+      return args;
+    }
+  }
+
+  Future<T> _withWakeLock<T>(Future<T> Function() fn) async {
+    final keepAwake = SettingsService().keepScreenAwake;
+    if (!keepAwake) return await fn();
+
+    try { await WakelockPlus.enable(); } catch (_) {}
+    try { return await fn(); }
+    finally { try { await WakelockPlus.disable(); } catch (_) {} }
+  }
 
   // ---------- AI risk scoring ----------
 
@@ -477,4 +519,6 @@ class ScanService {
     return RiskLevel.low;
   }
 }
+
+
 
