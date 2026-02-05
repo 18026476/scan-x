@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 
 class LocalNetworkInfo {
   final String ip;      // e.g., 192.168.1.10
@@ -32,7 +32,7 @@ class NetworkInfoService {
 
     final prefix = _netmaskToPrefix(mask);
     final network = _networkAddress(ip, mask);
-    final cidr = '\/\';
+    final cidr = '$network/$prefix';
 
     return LocalNetworkInfo(ip: ip, netmask: mask, cidr: cidr);
   }
@@ -47,7 +47,7 @@ class NetworkInfoService {
         const mask = '255.255.255.0';
         final network = _networkAddress(ip, mask);
         const prefix = 24;
-        return LocalNetworkInfo(ip: ip, netmask: mask, cidr: '\/\');
+        return LocalNetworkInfo(ip: ip, netmask: mask, cidr: '$network/$prefix');
       }
     }
     return null;
@@ -78,4 +78,19 @@ class NetworkInfoService {
     final net = List<int>.generate(4, (i) => ipParts[i] & mParts[i]);
     return net.join('.');
   }
+  String _prefixToNetmask(int prefix) {
+    int p = prefix.clamp(0, 32);
+    final bytes = <int>[];
+    for (int i = 0; i < 4; i++) {
+      final bits = (p >= 8) ? 8 : p;
+      p -= bits;
+      final val = bits == 0 ? 0 : (0xFF << (8 - bits)) & 0xFF;
+      bytes.add(val);
+    }
+    return bytes.join('.');
+  }
+
 }
+
+
+

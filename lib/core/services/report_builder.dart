@@ -86,7 +86,7 @@ class ReportBuilder {
       }
     }
 
-    // --- Score + label (self-contained so we donâ€™t depend on other services)
+    // --- Score + label (self-contained so we don't depend on other services)
     final score = _scanxV16ComputeRiskScore(devicesInScan, findings);
     final rating = _scanxV16RiskLabel(score);
     
@@ -384,13 +384,13 @@ List<String> _scanxV16MlInsights({
 
   lines.add('Network summary: $devCount device(s) discovered; $totalPorts open port(s) observed; $riskyHits high-risk port hit(s); risk score: $riskScore / 100.');
 
-  // Toggle-aware messages (so â€œML settings must be functionalâ€ is reflected)
+  // Toggle-aware messages (so "ML settings must be functional" is reflected)
   final localProfiling = settings['betaLocalMlProfiling'] == true;
   final behaviour = settings['betaBehaviourThreatDetection'] == true;
   final iotFp = settings['betaIotFingerprinting'] == true;
 
   if (!localProfiling && !behaviour && !iotFp) {
-    lines.add('ML modules are currently OFF in Settings. Enable â€œBeta MLâ€ toggles to increase the depth of ML insights.');
+    lines.add('ML modules are currently OFF in Settings. Enable "Beta ML" toggles to increase the depth of ML insights.');
     return lines;
   }
 
@@ -444,6 +444,7 @@ String scanxEnsureCidr(String input) {
   return '/32';
 }
 /* SCANX_V16C_CIDR_END */
+
 
 
 

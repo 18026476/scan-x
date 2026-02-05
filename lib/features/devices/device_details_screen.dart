@@ -104,7 +104,7 @@ class DeviceDetailsScreen extends StatelessWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        '${p.port}/${p.protocol} â‚¬Â¢ ${p.serviceName}',
+                        '${p.port}/${p.protocol} \u2022 ${p.serviceName}',
                         style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
                       ),
                     ),
@@ -226,5 +226,6 @@ class DeviceDetailsScreen extends StatelessWidget {
     );
   }
 }
+
 
 

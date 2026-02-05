@@ -356,8 +356,8 @@ class ScanService {
       'nmap',
       args,
       runInShell: true,
-      stdoutEncoding: utf8,
-      stderrEncoding: utf8,
+      stdoutEncoding: systemEncoding,
+      stderrEncoding: systemEncoding,
     );
 
     if (result.exitCode != 0) {
@@ -379,8 +379,8 @@ class ScanService {
           'nmap',
           fallbackArgs,
           runInShell: true,
-          stdoutEncoding: utf8,
-          stderrEncoding: utf8,
+          stdoutEncoding: systemEncoding,
+          stderrEncoding: systemEncoding,
         );
 
         if (retry.exitCode != 0) {
@@ -397,7 +397,23 @@ class ScanService {
   }
 
   String _sanitizeText(String s) {
-    var t = s.replaceAll('\uFFFD', '');
+    // 1) Fix mojibake from wrong decoding (common on Windows)
+    String _repairMojibake(String input) {
+      if (!(input.contains('â') || input.contains('Ã') || input.contains('Â'))) {
+        return input;
+      }
+      try {
+        // Reverse the common "wrong decode" scenario: latin1 -> utf8 repair
+        final repaired = utf8.decode(latin1.encode(input), allowMalformed: true);
+        final looksBetter = !repaired.contains('â') && !repaired.contains('Ã') && !repaired.contains('Â');
+        return looksBetter ? repaired : input;
+      } catch (_) {
+        return input;
+      }
+    }
+
+    var t = _repairMojibake(s);
+    t = t.replaceAll('\uFFFD', '');
     const junk = <String>[
       'ÃƒÆ’Ã†€™Ãƒ€šÃ‚¢ÃƒÆ’Ã‚¢Ãƒ¢Ã¢€š¬Ã…¡Ãƒ€šÃ‚¬ÃƒÆ’Ã‚¢Ãƒ¢Ã¢‚¬Å¡Ã‚¬Ãƒ€¦Ã¢‚¬Å“',
       'ÃƒÆ’Ã†€™Ãƒ€ Ã¢‚¬„¢ÃƒÆ’Ã¢‚¬ Ãƒ¢Ã¢€š¬Ã¢€ž¢ÃƒÆ’Ã†€™Ãƒ¢Ã¢€š¬Ã…¡ÃƒÆ’Ã¢‚¬Å¡Ãƒ€šÃ‚¢',
@@ -519,6 +535,7 @@ class ScanService {
     return RiskLevel.low;
   }
 }
+
 
 
 

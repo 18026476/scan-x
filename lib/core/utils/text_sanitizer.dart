@@ -1,17 +1,41 @@
-import 'text_sanitize.dart';
+﻿// lib/core/utils/text_sanitizer.dart
+// Keep import-free. No directives. Only declarations.
 
-/// Backward-compatible helpers.
-bool scanxLooksBroken(String s) {
-  return s.contains('\u00C3') ||
-      s.contains('\u00C2') ||
-      s.contains('\u00E2') ||
-      s.contains('\u201A') ||
-      s.contains('\uFFFD');
+class TextSanitizer {
+  static String normalizeUi(String input) {
+    var s = input;
+
+    // Hard-remove the exact garbage token you keep seeing.
+    // This is the fastest guarantee.
+    s = s.replaceAll('\u2022', '');
+
+    // Common mojibake / CP1252/UTF8-crossdecode fragments
+    final repl = <String, String>{
+      'â€¢': '',
+      'â€š': '',
+      'â€ž': '',
+      'â€¡': '',
+      'â€˜': "'",
+      'â€™': "'",
+      'â€œ': '"',
+      'â€�': '"',
+      'â€“': '-',
+      'â€”': '-',
+      'â€¦': '...',
+      'â†’': '->',
+      'Â·': '·',
+      'Â ': ' ',
+      '•': '',
+      '→': '->',
+    };
+    repl.forEach((k, v) => s = s.replaceAll(k, v));
+
+    // If any "â" fragments remain, strip them (these are never legit service names).
+    s = s.replaceAll(RegExp(r'â[^\\s]{0,8}'), '');
+
+    // Collapse whitespace + trim
+    s = s.replaceAll(RegExp(r'\\s+'), ' ').trim();
+    return s;
+  }
 }
 
-/// Single source of truth.
-String scanxCleanText(String s) => scanxTextSafe(s);
-
-/// Global alias used by some UI/PDF widgets.
-/// Keep it global so you do NOT need widget-level helper methods.
-String sanitizeUiText(String s) => scanxTextSafe(s);

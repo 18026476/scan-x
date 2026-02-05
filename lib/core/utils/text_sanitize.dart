@@ -1,12 +1,12 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 
 /// SCAN-X text sanitizer (UI-safe, permanent)
 ///
 /// Fixes classic mojibake like:
-///   Ã… / Â / â€¦ / ‚Ä / �
+///   Ãƒâ€¦ / Ã‚ / Ã¢â‚¬Â¦ / â€šÃ„ / ï¿½
 ///
 /// Strategy:
-/// 1) Remove obvious broken markers (U+FFFD, stray Â)
+/// 1) Remove obvious broken markers (U+FFFD, stray Ã‚)
 /// 2) If string looks like UTF-8 bytes decoded as Latin-1, repair via:
 ///    utf8.decode(latin1.encode(s), allowMalformed: true)
 ///    (run twice to handle double-encoding)
@@ -18,14 +18,14 @@ String scanxTextSafe(String? input) {
 
   s = s
       .replaceAll('\uFFFD', '')
-      .replaceAll('\u00C2', '') // Â
-      .replaceAll('Â', '');
+      .replaceAll('\u00C2', '') // Ã‚
+      .replaceAll('Ã‚', '');
 
   bool looksBroken(String x) =>
-      x.contains('\u00C3') || // Ã
-      x.contains('\u00C2') || // Â
-      x.contains('\u00E2') || // â
-      x.contains('\u201A') || // ‚
+      x.contains('\u00C3') || // Ãƒ
+      x.contains('\u00C2') || // Ã‚
+      x.contains('\u00E2') || // Ã¢
+      x.contains('\u201A') || // â€š
       x.contains('\uFFFD');
 
   int score(String x) {
@@ -56,13 +56,13 @@ String scanxTextSafe(String? input) {
   }
 
   s = s
-      .replaceAll('\u2022', '- ') // •
-      .replaceAll('\u2192', '->') // →
-      .replaceAll('\u2014', '-')  // —
-      .replaceAll('\u2013', '-')  // –
-      .replaceAll('\u2019', "'")  // ’
-      .replaceAll('\u201C', '"')  // “
-      .replaceAll('\u201D', '"'); // ”
+      .replaceAll('\u2022', '- ') // -
+      .replaceAll('\u2192', '->') // ->
+      .replaceAll('\u2014', '-')  // â€”
+      .replaceAll('\u2013', '-')  // â€“
+      .replaceAll('\u2019', "'")  // â€™
+      .replaceAll('\u201C', '"')  // â€œ
+      .replaceAll('\u201D', '"'); // â€
 
   s = s.replaceAll(RegExp(r'[ \t]{2,}'), ' ');
   s = s.replaceAll(RegExp(r'\n{3,}'), '\n\n');

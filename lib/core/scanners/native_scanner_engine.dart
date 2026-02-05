@@ -1,9 +1,10 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:io';
 
 import '../services/scan_service.dart';
 import 'scanner_engine.dart';
 import 'port_catalog.dart';
+import 'package:scanx_app/core/utils/text_sanitizer.dart';
 
 class NativeScannerEngine implements ScannerEngine {
   @override
@@ -17,7 +18,7 @@ class NativeScannerEngine implements ScannerEngine {
     final live = <String>{};
     final probePorts = const [80, 443, 445, 22, 3389];
 
-    await _parallelForEach(ips, concurrency: 128, (ip) async {
+    await _parallelForEach(ips, concurrency: 128, action: (ip) async {
       final ok = await _isHostUp(ip, probePorts, request.hostProbeTimeout);
       if (ok) live.add(ip);
     });
@@ -29,10 +30,10 @@ class NativeScannerEngine implements ScannerEngine {
     for (final ip in live) {
       final openPorts = <OpenPort>[];
 
-      await _parallelForEach(ports, concurrency: 64, (p) async {
+      await _parallelForEach(ports, concurrency: 64, action: (p) async {
         final isOpen = await _isPortOpen(ip, p, request.portConnectTimeout);
         if (isOpen) {
-          openPorts.add(OpenPort(port: p, protocol: 'tcp', serviceName: PortCatalog.nameFor(p)));
+          openPorts.add(OpenPort(port: p, protocol: 'tcp', serviceName: TextSanitizer.normalizeUi( TextSanitizer.normalizeUi(PortCatalog.nameFor(p)))));
         }
       });
 
@@ -43,7 +44,7 @@ class NativeScannerEngine implements ScannerEngine {
           address: ip,
           hostname: null,
           openPorts: openPorts,
-          riskLevel: _riskFromPorts(openPorts),
+          risk: _riskFromPorts(openPorts),
         ),
       );
     }
@@ -123,3 +124,4 @@ class NativeScannerEngine implements ScannerEngine {
     return List<String>.generate(254, (i) => '\\');
   }
 }
+

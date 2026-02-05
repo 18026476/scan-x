@@ -1,0 +1,19 @@
+Resolving dependencies...
+Downloading packages...
+  characters 1.4.0 (1.4.1 available)
+  ffi 2.1.4 (2.1.5 available)
+  flutter_lints 4.0.0 (6.0.0 available)
+  image 4.5.4 (4.7.2 available)
+  lints 4.0.0 (6.1.0 available)
+  matcher 0.12.17 (0.12.18 available)
+  material_color_utilities 0.11.1 (0.13.0 available)
+  meta 1.17.0 (1.18.1 available)
+  shared_preferences 2.5.3 (2.5.4 available)
+  shared_preferences_android 2.4.18 (2.4.20 available)
+  test_api 0.7.7 (0.7.9 available)
+  timezone 0.10.1 (0.11.0 available)
+Got dependencies!
+12 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+Building Windows application...                                   135.1s
+√ Built build\windows\x64\runner\Release\scanx_app.exe

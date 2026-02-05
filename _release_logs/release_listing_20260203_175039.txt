@@ -1,0 +1,41 @@
+﻿=== RELEASE LISTING (C:\Users\Acer\scanx\scan-x\build\windows\x64\runner\Release) ===
+
+
+FullName                                                                                                                           L
+                                                                                                                                   e
+                                                                                                                                   n
+                                                                                                                                   g
+                                                                                                                                   t
+                                                                                                                                   h
+--------                                                                                                                           -
+C:\Users\Acer\scanx\scan-x\build\windows\x64\runner\Release\data                                                                    
+C:\Users\Acer\scanx\scan-x\build\windows\x64\runner\Release\data\app.so                                                            7
+C:\Users\Acer\scanx\scan-x\build\windows\x64\runner\Release\data\flutter_assets                                                     
+C:\Users\Acer\scanx\scan-x\build\windows\x64\runner\Release\data\flutter_assets\AssetManifest.bin                                  3
+C:\Users\Acer\scanx\scan-x\build\windows\x64\runner\Release\data\flutter_assets\assets                                              
+C:\Users\Acer\scanx\scan-x\build\windows\x64\runner\Release\data\flutter_assets\assets\fonts                                        
+C:\Users\Acer\scanx\scan-x\build\windows\x64\runner\Release\data\flutter_assets\assets\fonts\MaterialIcons-Regular.otf             1
+C:\Users\Acer\scanx\scan-x\build\windows\x64\runner\Release\data\flutter_assets\FontManifest.json                                  2
+C:\Users\Acer\scanx\scan-x\build\windows\x64\runner\Release\data\flutter_assets\fonts                                               
+C:\Users\Acer\scanx\scan-x\build\windows\x64\runner\Release\data\flutter_assets\fonts\MaterialIcons-Regular.otf                    1
+C:\Users\Acer\scanx\scan-x\build\windows\x64\runner\Release\data\flutter_assets\NativeAssetsManifest.json                          4
+C:\Users\Acer\scanx\scan-x\build\windows\x64\runner\Release\data\flutter_assets\NOTICES.Z                                          1
+C:\Users\Acer\scanx\scan-x\build\windows\x64\runner\Release\data\flutter_assets\packages                                            
+C:\Users\Acer\scanx\scan-x\build\windows\x64\runner\Release\data\flutter_assets\packages\cupertino_icons                            
+C:\Users\Acer\scanx\scan-x\build\windows\x64\runner\Release\data\flutter_assets\packages\cupertino_icons\assets                     
+C:\Users\Acer\scanx\scan-x\build\windows\x64\runner\Release\data\flutter_assets\packages\cupertino_icons\assets\CupertinoIcons.ttf 2
+C:\Users\Acer\scanx\scan-x\build\windows\x64\runner\Release\data\flutter_assets\packages\wakelock_plus                              
+C:\Users\Acer\scanx\scan-x\build\windows\x64\runner\Release\data\flutter_assets\packages\wakelock_plus\assets                       
+C:\Users\Acer\scanx\scan-x\build\windows\x64\runner\Release\data\flutter_assets\packages\wakelock_plus\assets\no_sleep.js          1
+C:\Users\Acer\scanx\scan-x\build\windows\x64\runner\Release\data\flutter_assets\shaders                                             
+C:\Users\Acer\scanx\scan-x\build\windows\x64\runner\Release\data\flutter_assets\shaders\ink_sparkle.frag                           2
+C:\Users\Acer\scanx\scan-x\build\windows\x64\runner\Release\data\flutter_assets\shaders\stretch_effect.frag                        1
+C:\Users\Acer\scanx\scan-x\build\windows\x64\runner\Release\data\icudtl.dat                                                        7
+C:\Users\Acer\scanx\scan-x\build\windows\x64\runner\Release\flutter_windows.dll                                                    1
+C:\Users\Acer\scanx\scan-x\build\windows\x64\runner\Release\native_assets.json                                                     4
+C:\Users\Acer\scanx\scan-x\build\windows\x64\runner\Release\pdfium.dll                                                             4
+C:\Users\Acer\scanx\scan-x\build\windows\x64\runner\Release\printing_plugin.dll                                                    1
+C:\Users\Acer\scanx\scan-x\build\windows\x64\runner\Release\scanx_app.exe                                                          9
+
+
+

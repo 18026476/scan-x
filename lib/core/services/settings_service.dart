@@ -13,9 +13,9 @@ class SettingsService {
   static const _kScanModeIndex = '${_prefix}scanModeIndex';
 
   // Keys
-  static const _kTwoFactor = '\$\{_prefix\}twoFactorEnabled';
-  static const _kTwoFactorSecret = '\$\{_prefix\}twoFactorSecret';
-  static const _kTwoFactorVerifiedUntilMs = '\$\{_prefix\}twoFactorVerifiedUntilMs';
+  static const _kTwoFactor = '${_prefix}twoFactorEnabled';
+  static const _kTwoFactorSecret = '${_prefix}twoFactorSecret';
+  static const _kTwoFactorVerifiedUntilMs = '${_prefix}twoFactorVerifiedUntilMs';
   static const _kAppTheme = '${_prefix}appTheme';
   static const _kAppLanguage = '${_prefix}appLanguage';
 
@@ -639,6 +639,7 @@ class ScanSettings {
     );
   }
 }
+
 
 
 

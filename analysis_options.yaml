@@ -1,5 +1,7 @@
-﻿include: package:flutter_lints/flutter.yaml
-
-analyzer:
+﻿analyzer:
   exclude:
-    - backups/**
+    - "_patch_backups/**"
+    - "_chat_exports/**"
+    - "backups/**"
+    - "patch_reports/**"
+    - "**/*.bak_*"

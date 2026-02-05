@@ -1,0 +1,56 @@
+﻿=== SCANX MODEL CONSTRUCTOR + CALLSITE REPORT (20260203_185920) ===
+
+--- CLASS DEFINITIONS (snippets) ---
+
+--- CONSTRUCTOR SIGNATURES (snippets) ---
+
+--- native_scanner_engine.dart CALLS (context) ---
+
+  C:\Users\Acer\scanx\scan-x\lib\core\scanners\native_scanner_engine.dart:33:        final isOpen = await _isPortOpen(ip, p, request.portConnectTimeout);
+  C:\Users\Acer\scanx\scan-x\lib\core\scanners\native_scanner_engine.dart:34:        if (isOpen) {
+> C:\Users\Acer\scanx\scan-x\lib\core\scanners\native_scanner_engine.dart:35:          openPorts.add(OpenPort(port: p, protocol: 'tcp', serviceName: PortCatalog.nameFor(p)));
+  C:\Users\Acer\scanx\scan-x\lib\core\scanners\native_scanner_engine.dart:36:        }
+  C:\Users\Acer\scanx\scan-x\lib\core\scanners\native_scanner_engine.dart:37:      });
+  C:\Users\Acer\scanx\scan-x\lib\core\scanners\native_scanner_engine.dart:38:
+  C:\Users\Acer\scanx\scan-x\lib\core\scanners\native_scanner_engine.dart:39:      openPorts.sort((a, b) => a.port.compareTo(b.port));
+  C:\Users\Acer\scanx\scan-x\lib\core\scanners\native_scanner_engine.dart:40:
+  C:\Users\Acer\scanx\scan-x\lib\core\scanners\native_scanner_engine.dart:41:      hosts.add(
+        final isOpen = await _isPortOpen(ip, p, request.portConnectTimeout);
+        if (isOpen) {
+          openPorts.add(OpenPort(port: p, protocol: 'tcp', serviceName: PortCatalog.nameFor(p)));
+        }
+      });
+
+      openPorts.sort((a, b) => a.port.compareTo(b.port));
+
+      hosts.add(
+
+
+> C:\Users\Acer\scanx\scan-x\lib\core\scanners\native_scanner_engine.dart:42:        DetectedHost(
+  C:\Users\Acer\scanx\scan-x\lib\core\scanners\native_scanner_engine.dart:43:          address: ip,
+  C:\Users\Acer\scanx\scan-x\lib\core\scanners\native_scanner_engine.dart:44:          hostname: null,
+  C:\Users\Acer\scanx\scan-x\lib\core\scanners\native_scanner_engine.dart:45:          openPorts: openPorts,
+
+        DetectedHost(
+          address: ip,
+          hostname: null,
+          openPorts: openPorts,
+
+
+> C:\Users\Acer\scanx\scan-x\lib\core\scanners\native_scanner_engine.dart:46:          riskLevel: _riskFromPorts(openPorts),
+  C:\Users\Acer\scanx\scan-x\lib\core\scanners\native_scanner_engine.dart:47:        ),
+  C:\Users\Acer\scanx\scan-x\lib\core\scanners\native_scanner_engine.dart:48:      );
+  C:\Users\Acer\scanx\scan-x\lib\core\scanners\native_scanner_engine.dart:49:    }
+  C:\Users\Acer\scanx\scan-x\lib\core\scanners\native_scanner_engine.dart:50:
+  C:\Users\Acer\scanx\scan-x\lib\core\scanners\native_scanner_engine.dart:51:    hosts.sort((a, b) => a.address.compareTo(b.address));
+  C:\Users\Acer\scanx\scan-x\lib\core\scanners\native_scanner_engine.dart:52:    return hosts;
+
+          riskLevel: _riskFromPorts(openPorts),
+        ),
+      );
+    }
+
+    hosts.sort((a, b) => a.address.compareTo(b.address));
+    return hosts;
+
+
