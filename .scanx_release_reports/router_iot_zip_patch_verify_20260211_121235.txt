@@ -1,0 +1,11 @@
+﻿SCAN-X Router & IoT ZIP Patch Verification
+Timestamp: 20260211_121235
+
+PASS: pubspec.yaml found
+PASS: lib folder found
+PASS: Found router_iot_security.dart
+PASS: All screenshot toggle keys present
+PASS: RouterIotSecurityService class exists
+PASS: Release EXE exists
+
+FINAL VERDICT: READY

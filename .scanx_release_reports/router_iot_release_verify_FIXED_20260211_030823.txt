@@ -1,0 +1,9 @@
+﻿SCAN-X Router & IoT Release Verification (FIXED)
+Timestamp: 20260211_030823
+
+FAIL: Missing toggle keys in router_iot_security.dart: routerWeakPassword, routerOutdatedFirmware, routerOpenPorts, routerUpnpCheck, routerWpsCheck, routerDnsHijack, iotOutdatedFirmware, iotDefaultPasswords, iotVulnDbMatch, iotAutoRecommendations
+FAIL: RouterIotSecurityService class not found in router_iot_security.dart
+FAIL: RouterIotSecurityService not referenced outside settings (engine not wired to UI)
+FAIL: Release build folder not found (run flutter build windows --release)
+
+FINAL VERDICT: NOT READY

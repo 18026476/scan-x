@@ -1,0 +1,38 @@
+﻿SCAN-X Alerts Settings Verification
+Timestamp: 20260211_125430
+Project: C:\Users\Acer\scanx\scan-x
+
+PASS: Runtime files exist
+
+=== KEY CHECKS ===
+FAIL: notifyHighRisk not used in in_app_notifier.dart
+FAIL: notifyScanCompleted not used in in_app_notifier.dart
+PASS: notifyAutoScanResults used in in_app_notifier.dart
+  -> .\lib\core\services\in_app_notifier.dart:11
+FAIL: notifyNewDevice not used in in_app_notifier.dart
+FAIL: notifyUnknownDevice not used in in_app_notifier.dart
+FAIL: notifyRouterVuln not used in in_app_notifier.dart
+FAIL: notifyIotWarning not used in in_app_notifier.dart
+PASS: alertSound used in in_app_notifier.dart
+  -> .\lib\core\services\in_app_notifier.dart:16
+PASS: alertVibration used in in_app_notifier.dart
+  -> .\lib\core\services\in_app_notifier.dart:19
+PASS: alertSilentMode used in in_app_notifier.dart
+  -> .\lib\core\services\in_app_notifier.dart:13
+PASS: alertSensitivity used in alert_rules_engine.dart
+  -> .\lib\core\services\alert_rules_engine.dart:47
+PASS: alertNewDevice used in alert_rules_engine.dart
+  -> .\lib\core\services\alert_rules_engine.dart:51
+PASS: alertMacChange used in alert_rules_engine.dart
+  -> .\lib\core\services\alert_rules_engine.dart:65
+PASS: alertArpSpoof used in alert_rules_engine.dart
+  -> .\lib\core\services\alert_rules_engine.dart:82
+PASS: alertPortScanAttempts used in alert_rules_engine.dart
+  -> .\lib\core\services\alert_rules_engine.dart:102
+
+=== PIPELINE CHECK ===
+PASS: PostScanPipeline calls InAppNotifier().notify(...)
+FAIL: Release EXE not found
+
+=== FINAL ===
+FINAL: NOT READY
