@@ -1,0 +1,41 @@
+﻿SCAN-X Alerts Functionality Verification
+Timestamp: 20260212_022851
+Project: C:\Users\Acer\scanx\scan-x
+
+PASS: Runtime files found
+
+=== KEY CHECKS ===
+PASS: Notify on HIGH-risk findings (notifyHighRisk) used in .\lib\core\services\alert_rules_engine.dart
+  -> .\lib\core\services\alert_rules_engine.dart:125
+PASS: Notify when scan completes (notifyScanCompleted) used in .\lib\core\services\alert_rules_engine.dart
+  -> .\lib\core\services\alert_rules_engine.dart:135
+PASS: Notify on scheduled auto-scan results (notifyAutoScanResults) used in .\lib\core\services\in_app_notifier.dart
+  -> .\lib\core\services\in_app_notifier.dart:11
+PASS: Sound (alertSoundEnabled) used in .\lib\core\services\in_app_notifier.dart
+  -> .\lib\core\services\in_app_notifier.dart:16
+PASS: Vibration / haptic feedback (alertVibrationEnabled) used in .\lib\core\services\in_app_notifier.dart
+  -> .\lib\core\services\in_app_notifier.dart:19
+PASS: Silent mode (alertSilentMode) used in .\lib\core\services\in_app_notifier.dart
+  -> .\lib\core\services\in_app_notifier.dart:13
+PASS: Alert sensitivity (alertSensitivity) used in .\lib\core\services\alert_rules_engine.dart
+  -> .\lib\core\services\alert_rules_engine.dart:47
+PASS: Detection: New device joins network (alertNewDevice) used in .\lib\core\services\alert_rules_engine.dart
+  -> .\lib\core\services\alert_rules_engine.dart:51
+PASS: Detection: Device MAC address changed (alertMacChange) used in .\lib\core\services\alert_rules_engine.dart
+  -> .\lib\core\services\alert_rules_engine.dart:65
+PASS: Detection: Possible ARP spoofing (alertArpSpoof) used in .\lib\core\services\alert_rules_engine.dart
+  -> .\lib\core\services\alert_rules_engine.dart:82
+PASS: Detection: Port-scan attempts detected (alertPortScanAttempts) used in .\lib\core\services\alert_rules_engine.dart
+  -> .\lib\core\services\alert_rules_engine.dart:102
+FAIL: Notify on new device (notifyNewDevice) NOT used in .\lib\core\services\alert_rules_engine.dart
+FAIL: Notify on unknown / untrusted device (notifyUnknownDevice) NOT used in .\lib\core\services\alert_rules_engine.dart
+FAIL: Notify on router vulnerability (notifyRouterVuln) NOT used in .\lib\core\services\alert_rules_engine.dart
+FAIL: Notify on IoT warning (notifyIotWarning) NOT used in .\lib\core\services\alert_rules_engine.dart
+
+=== PIPELINE CHECKS ===
+PASS: Pipeline calls AlertRulesEngine().buildEvents(...)
+PASS: Pipeline calls InAppNotifier().notify(...)
+WARN: Release EXE not found
+
+=== FINAL ===
+FINAL: NOT READY (dead toggles exist)

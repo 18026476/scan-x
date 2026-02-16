@@ -1,0 +1,1 @@
+﻿APPLY script not found in patch zip (APPLY_SCANX_ALERTS_WIRING_PATCH.ps1)

@@ -1,0 +1,42 @@
+﻿SCAN-X Alerts Settings Verification (V2)
+Timestamp: 20260212_031321
+Project: C:\Users\Acer\scanx\scan-x
+
+
+=== SETTINGS SERVICE KEYS ===
+PASS: SettingsService has notifyHighRisk
+PASS: SettingsService has notifyScanCompleted
+PASS: SettingsService has notifyAutoScanResults
+PASS: SettingsService has notifyNewDevice
+PASS: SettingsService has notifyUnknownDevice
+PASS: SettingsService has notifyRouterVuln
+PASS: SettingsService has notifyIotWarning
+PASS: SettingsService has alertSoundEnabled
+PASS: SettingsService has alertVibrationEnabled
+PASS: SettingsService has alertSilentMode
+PASS: SettingsService has alertSensitivity
+PASS: SettingsService has alertNewDevice
+PASS: SettingsService has alertMacChange
+PASS: SettingsService has alertArpSpoof
+PASS: SettingsService has alertPortScanAttempts
+
+=== RUNTIME USAGE ===
+FAIL: notifyHighRisk appears dead
+FAIL: notifyScanCompleted appears dead
+FAIL: notifyAutoScanResults appears dead
+FAIL: notifyNewDevice appears dead
+FAIL: notifyUnknownDevice appears dead
+FAIL: notifyRouterVuln appears dead
+FAIL: notifyIotWarning appears dead
+FAIL: alertSoundEnabled appears dead
+FAIL: alertVibrationEnabled appears dead
+FAIL: alertSilentMode appears dead
+FAIL: alertSensitivity appears dead
+FAIL: alertNewDevice appears dead
+FAIL: alertMacChange appears dead
+FAIL: alertArpSpoof appears dead
+FAIL: alertPortScanAttempts appears dead
+WARN: release exe not found
+
+=== FINAL ===
+FINAL: NOT READY

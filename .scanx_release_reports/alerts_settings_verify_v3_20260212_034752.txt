@@ -1,0 +1,38 @@
+﻿SCAN-X Alerts Settings Verification (V3)
+Timestamp: 20260212_034752
+Project: C:\Users\Acer\scanx\scan-x
+
+PASS: SettingsService has notifyHighRisk
+PASS: SettingsService has notifyScanCompleted
+PASS: SettingsService has notifyAutoScanResults
+PASS: SettingsService has notifyNewDevice
+PASS: SettingsService has notifyUnknownDevice
+PASS: SettingsService has notifyRouterVuln
+PASS: SettingsService has notifyIotWarning
+PASS: SettingsService has alertSoundEnabled
+PASS: SettingsService has alertVibrationEnabled
+PASS: SettingsService has alertSilentMode
+PASS: SettingsService has alertSensitivity
+PASS: SettingsService has alertNewDevice
+PASS: SettingsService has alertMacChange
+PASS: SettingsService has alertArpSpoof
+PASS: SettingsService has alertPortScanAttempts
+PASS: notifyHighRisk -> .\lib\core\services\alert_rules_engine.dart:133
+PASS: notifyScanCompleted -> .\lib\core\services\alert_rules_engine.dart:178
+FAIL: notifyNewDevice not referenced in .\lib\core\services\alert_rules_engine.dart
+FAIL: notifyUnknownDevice not referenced in .\lib\core\services\alert_rules_engine.dart
+PASS: notifyRouterVuln -> .\lib\core\services\alert_rules_engine.dart:145
+PASS: notifyIotWarning -> .\lib\core\services\alert_rules_engine.dart:162
+PASS: notifyAutoScanResults -> .\lib\core\services\in_app_notifier.dart:42
+PASS: alertSoundEnabled -> .\lib\core\services\in_app_notifier.dart:19
+PASS: alertVibrationEnabled -> .\lib\core\services\in_app_notifier.dart:22
+PASS: alertSilentMode -> .\lib\core\services\in_app_notifier.dart:16
+PASS: alertSensitivity -> .\lib\core\services\alert_rules_engine.dart:55
+PASS: alertNewDevice -> .\lib\core\services\alert_rules_engine.dart:59
+PASS: alertMacChange -> .\lib\core\services\alert_rules_engine.dart:73
+PASS: alertArpSpoof -> .\lib\core\services\alert_rules_engine.dart:90
+PASS: alertPortScanAttempts -> .\lib\core\services\alert_rules_engine.dart:110
+PASS: pipeline buildEvents
+PASS: pipeline notify
+WARN: release exe not found
+FINAL: NOT READY

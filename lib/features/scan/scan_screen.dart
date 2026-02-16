@@ -9,6 +9,8 @@ import 'package:printing/printing.dart';
 import '../../core/services/scan_service.dart';
 import '../../core/services/settings_service.dart';
 import 'package:scanx_app/core/utils/text_sanitize.dart';
+
+import 'package:scanx_app/core/services/post_scan_pipeline.dart';
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key});
 
@@ -107,8 +109,16 @@ class _ScanScreenState extends State<ScanScreen> {
 
     try {
       final result = await _scanService.runSmartScan(target);
-
-      if (!mounted) return;
+    // --- SCAN-X: wire post-scan alerts pipeline (safe, non-async) ---
+    if (result != null) {
+      try {
+        PostScanPipeline.handleScanComplete(
+          context,
+          result: result!,
+          isAutoScan: false,
+        );
+      } catch (_) {}
+    }if (!mounted) return;
       setState(() {
         _isScanning = false;
         _lastResult = result;
@@ -150,8 +160,16 @@ class _ScanScreenState extends State<ScanScreen> {
 
     try {
       final result = await _scanService.runFullScan(target);
-
-      if (!mounted) return;
+    // --- SCAN-X: wire post-scan alerts pipeline (safe, non-async) ---
+    if (result != null) {
+      try {
+        PostScanPipeline.handleScanComplete(
+          context,
+          result: result!,
+          isAutoScan: false,
+        );
+      } catch (_) {}
+    }if (!mounted) return;
       setState(() {
         _isScanning = false;
         _lastResult = result;
@@ -180,8 +198,17 @@ class _ScanScreenState extends State<ScanScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final result = _lastResult;
-    final hosts = result?.hosts ?? [];
+    final result = _lastResult;
+    // --- SCAN-X: wire post-scan alerts pipeline (safe, non-async) ---
+    if (result != null) {
+      try {
+        PostScanPipeline.handleScanComplete(
+          context,
+          result: result!,
+          isAutoScan: false,
+        );
+      } catch (_) {}
+    }final hosts = result?.hosts ?? [];
 
     final highRisk = hosts.where((h) => h.risk == RiskLevel.high).length;
     final mediumRisk = hosts.where((h) => h.risk == RiskLevel.medium).length;
@@ -660,6 +687,11 @@ class _GaugePainter extends CustomPainter {
         oldDelegate.majorTickColor != majorTickColor;
   }
 }
+
+
+
+
+
 
 
 

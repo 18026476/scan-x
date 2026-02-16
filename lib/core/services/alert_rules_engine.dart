@@ -13,6 +13,9 @@ enum AlertType {
 }
 
 class AlertEvent {
+  @override
+  String toString() => title;
+
   final AlertType type;
   final AlertSeverity severity;
   final String title;
@@ -145,3 +148,4 @@ class AlertRulesEngine {
     return events;
   }
 }
+

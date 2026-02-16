@@ -1,4 +1,4 @@
-// lib/features/router/router_iot_security.dart
+﻿// lib/features/router/router_iot_security.dart
 //
 // Router & IoT security analysis built on top of existing scan data.
 // This service MUST remain honest:
@@ -9,6 +9,17 @@
 import 'package:scanx_app/core/services/scan_service.dart';
 import 'package:scanx_app/core/services/settings_service.dart';
 
+
+  // SCANX_UNCERTAIN_SERVICE_HELPER_BEGIN
+  String scanxServiceLabel(String s) {
+    final t = s.trim();
+    if (t.endsWith('?')) {
+      final base = t.substring(0, t.length - 1).trim();
+      return base.isEmpty ? t : (base + ' (uncertain)');
+    }
+    return t;
+  }
+  // SCANX_UNCERTAIN_SERVICE_HELPER_END
 /// Types of router / IoT issues we may flag.
 enum RouterIotIssueType {
   routerNotFound,
@@ -305,3 +316,4 @@ class RouterIotSecurityService {
 }
 
 enum _SimpleRisk { low, medium, high }
+

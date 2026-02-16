@@ -1,0 +1,21 @@
+﻿import 'dart:io';
+
+class ScanxDebugLog {
+  static String path() {
+    try {
+      final sep = Platform.pathSeparator;
+      return Directory.systemTemp.path + sep + 'scanx_alerts_debug.log';
+    } catch (_) {
+      return 'scanx_alerts_debug.log';
+    }
+  }
+
+  static void write(String msg) {
+    try {
+      final file = File(path());
+      file.parent.createSync(recursive: true);
+      final ts = DateTime.now().toIso8601String();
+      file.writeAsStringSync('[' + ts + '] ' + msg + '\n', mode: FileMode.append, flush: true);
+    } catch (_) {}
+  }
+}

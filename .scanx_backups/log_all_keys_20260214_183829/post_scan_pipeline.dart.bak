@@ -1,0 +1,57 @@
+﻿import 'package:flutter/material.dart';
+import 'package:scanx_app/core/services/scan_service.dart';
+import 'package:scanx_app/core/services/scan_snapshot_store.dart';
+import 'package:scanx_app/core/services/alert_rules_engine.dart';
+import 'package:scanx_app/core/services/in_app_notifier.dart';
+
+
+import 'package:scanx_app/core/utils/scanx_debug_log.dart';
+
+import 'package:shared_preferences/shared_preferences.dart';
+class PostScanPipeline {
+  static Future<void> handleScanComplete(
+    BuildContext context, {
+    required ScanResult result,
+    required bool isAutoScan,
+  }) async {
+    // --- SCAN-X CERTIFICATION LOGS BEGIN ---
+    ScanxDebugLog.write('PSC ENTER :: isAutoScan=' + isAutoScan.toString());
+    // Read toggles as the source-of-truth (proves ON vs OFF)
+    try {
+      final p = await SharedPreferences.getInstance();
+      final keys = <String>[
+        'notifyNewDevice','notifyUnknownDevice','notifyRouterVuln','notifyIotWarning',
+        'notifyHighRisk','notifyScanCompleted','notifyAutoScanResults',
+        'alertSoundEnabled','alertVibrationEnabled','alertSilentMode',
+      ];
+      final parts = <String>[];
+      for (final k in keys) {
+        final v = p.getBool(k);
+        parts.add(k + '=' + (v == null ? 'null' : v.toString()));
+      }
+      ScanxDebugLog.write('PSC PREFS :: ' + parts.join(', '));
+    } catch (e) {
+      ScanxDebugLog.write('PSC PREFS READ EX :: ' + e.toString());
+    }
+    // --- SCAN-X CERTIFICATION LOGS END ---
+    ScanxDebugLog.write('PostScanPipeline.ENTER handleScanComplete');
+    final store = ScanSnapshotStore();
+    final previous = await store.load();
+    final ipToMac = await store.getIpToMacBestEffort();
+
+    final events = AlertRulesEngine().buildEvents(
+      current: result,
+      previousSnapshot: previous,
+      currentIpToMac: ipToMac,
+    );
+
+    
+    ScanxDebugLog.write('PSC eventsBuilt count=' + events.length.toString());await store.save(result: result, ipToMac: ipToMac);
+    if (!context.mounted) return;
+    ScanxDebugLog.write('PSC notify START');
+    await InAppNotifier().notify(context, events, isAutoScan: isAutoScan);
+  
+    ScanxDebugLog.write('PSC notify END');}
+}
+
+

@@ -1,0 +1,70 @@
+﻿import 'dart:io';
+import 'package:flutter/material.dart';
+import 'dart:io';
+import 'package:flutter/services.dart';
+import 'dart:io';
+import 'package:scanx_app/core/services/alert_rules_engine.dart';
+import 'dart:io';
+import 'package:scanx_app/core/services/settings_service.dart';
+
+
+String _scanxAlertsLogPath() {
+  final appData = Platform.environment['APPDATA'] ?? '';
+  // Matches your prefs folder: %APPDATA%\com.example\scanx_app
+  if (appData.isEmpty) return 'scanx_alerts_debug.log';
+  return '\\\com.example\\scanx_app\\scanx_alerts_debug.log';
+}
+
+void _scanxAlertsLog(String msg) {
+  try {
+    final path = _scanxAlertsLogPath();
+    final file = File(path);
+    file.parent.createSync(recursive: true);
+    final ts = DateTime.now().toIso8601String();
+    file.writeAsStringSync('[\] \\\n', mode: FileMode.append, flush: true);
+  } catch (_) {}
+}
+class InAppNotifier {
+  Future<void> notify(BuildContext context, List<AlertEvent> events, {required bool isAutoScan}) async {
+    if (events.isEmpty) return;
+
+    final s = SettingsService();
+    if (isAutoScan && !s.notifyAutoScanResults) return;
+
+    final silent = s.alertSilentMode;
+
+    if (!silent) {
+      if (s.alertSoundEnabled) {
+        SystemSound.play(SystemSoundType.alert);
+      }
+      if (s.alertVibrationEnabled) {
+        HapticFeedback.lightImpact();
+      }
+    }
+
+    final top = _pickMostSevere(events);
+    final extra = events.length - 1;
+    final msg = extra > 0 ? '$top.title (${extra} more)' : top.title;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        duration: const Duration(seconds: 4),
+      ),
+    );
+  }
+
+  AlertEvent _pickMostSevere(List<AlertEvent> events) {
+    int rank(AlertSeverity s) {
+      switch (s) {
+        case AlertSeverity.critical: return 5;
+        case AlertSeverity.high: return 4;
+        case AlertSeverity.medium: return 3;
+        case AlertSeverity.low: return 2;
+        case AlertSeverity.info: return 1;
+      }
+    }
+    events.sort((a, b) => rank(b.severity).compareTo(rank(a.severity)));
+    return events.first;
+  }
+}

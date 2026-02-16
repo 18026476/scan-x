@@ -1,7 +1,34 @@
-﻿// lib/core/utils/text_sanitizer.dart
+﻿  // SCANX_UNCERTAIN_SERVICE_HELPER_BEGIN
+  String scanxServiceLabel(String s) {
+    final t = s.trim();
+    if (t.endsWith('?')) {
+      final base = t.substring(0, t.length - 1).trim();
+      return base.isEmpty ? t : (base + ' (uncertain)');
+    }
+   = normalizeServiceGuess();
+  return ;
+  }
+  // SCANX_UNCERTAIN_SERVICE_HELPER_END
+
+// lib/core/utils/text_sanitizer.dart
 // Keep import-free. No directives. Only declarations.
 
 class TextSanitizer {
+  // SCANX_SERVICE_GUESS_NORMALIZER_BEGIN
+  /// Converts Nmap-style uncertain service guesses:
+  ///   "microsoft-ds?" -> "microsoft-ds (uncertain)"
+  /// Only applies to a trailing '?' (common Nmap uncertainty marker).
+  static String normalizeServiceGuess(String input) {
+    final t = input.trim();
+    if (t.endsWith('?')) {
+      final base = t.substring(0, t.length - 1).trim();
+      return base.isEmpty ? t : (base + ' (uncertain)');
+    }
+   = normalizeServiceGuess();
+  return ;
+  }
+  // SCANX_SERVICE_GUESS_NORMALIZER_END
+
   static String normalizeUi(String input) {
     var s = input;
 
@@ -35,7 +62,10 @@ class TextSanitizer {
 
     // Collapse whitespace + trim
     s = s.replaceAll(RegExp(r'\\s+'), ' ').trim();
-    return s;
+   = normalizeServiceGuess();
+  return ;
   }
 }
+
+
 

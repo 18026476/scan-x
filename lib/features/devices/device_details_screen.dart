@@ -6,6 +6,17 @@ import 'package:scanx_app/core/utils/text_sanitize.dart';
 import 'package:scanx_app/core/services/security_ai_service.dart';
 
 import 'package:scanx_app/core/utils/text_sanitize.dart';
+
+  // SCANX_UNCERTAIN_SERVICE_HELPER_BEGIN
+  String scanxServiceLabel(String s) {
+    final t = s.trim();
+    if (t.endsWith('?')) {
+      final base = t.substring(0, t.length - 1).trim();
+      return base.isEmpty ? t : (base + ' (uncertain)');
+    }
+    return t;
+  }
+  // SCANX_UNCERTAIN_SERVICE_HELPER_END
 class DeviceDetailsScreen extends StatelessWidget {
   final DetectedHost host;
 
@@ -104,7 +115,7 @@ class DeviceDetailsScreen extends StatelessWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        '${p.port}/${p.protocol} \u2022 ${p.serviceName}',
+                        '${p.port}/${p.protocol} \u2022 ${scanxServiceLabel(p.serviceName)}',
                         style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
                       ),
                     ),
@@ -226,6 +237,7 @@ class DeviceDetailsScreen extends StatelessWidget {
     );
   }
 }
+
 
 
 

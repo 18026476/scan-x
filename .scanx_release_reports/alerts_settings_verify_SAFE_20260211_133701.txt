@@ -1,0 +1,59 @@
+﻿SCAN-X Alerts Settings Verification (SAFE)
+Timestamp: 20260211_133701
+Project: C:\Users\Acer\scanx\scan-x
+
+PASS: Runtime files found
+
+=== SETTINGS SERVICE KEYS ===
+PASS: SettingsService has notifyHighRisk
+PASS: SettingsService has notifyScanCompleted
+PASS: SettingsService has notifyNewDevice
+PASS: SettingsService has notifyUnknownDevice
+PASS: SettingsService has notifyRouterVuln
+PASS: SettingsService has notifyIotWarning
+PASS: SettingsService has alertSilentMode
+PASS: SettingsService has alertSoundEnabled
+PASS: SettingsService has alertVibrationEnabled
+PASS: SettingsService has alertSensitivity
+PASS: SettingsService has alertNewDevice
+PASS: SettingsService has alertMacChange
+PASS: SettingsService has alertArpSpoof
+PASS: SettingsService has alertPortScanAttempts
+PASS: SettingsService has notifyAutoScanResults
+
+=== RUNTIME WIRING CHECKS ===
+PASS: Notify on HIGH-risk findings (gates highRiskFindings) uses notifyHighRisk
+  -> .\lib\core\services\alert_rules_engine.dart:125
+PASS: Notify when scan completes (gates scanCompleted) uses notifyScanCompleted
+  -> .\lib\core\services\alert_rules_engine.dart:135
+FAIL: Notify on new device (no producer currently) does NOT use notifyNewDevice
+FAIL: Notify on unknown/untrusted device (no producer currently) does NOT use notifyUnknownDevice
+FAIL: Notify on router vulnerability (no producer currently) does NOT use notifyRouterVuln
+FAIL: Notify on IoT warning (no producer currently) does NOT use notifyIotWarning
+PASS: Silent mode uses alertSilentMode
+  -> .\lib\core\services\in_app_notifier.dart:13
+PASS: Sound uses alertSoundEnabled
+  -> .\lib\core\services\in_app_notifier.dart:16
+PASS: Vibration / haptic uses alertVibrationEnabled
+  -> .\lib\core\services\in_app_notifier.dart:19
+PASS: Alert sensitivity uses alertSensitivity
+  -> .\lib\core\services\alert_rules_engine.dart:47
+PASS: Detection: new device joins network uses alertNewDevice
+  -> .\lib\core\services\alert_rules_engine.dart:51
+PASS: Detection: device MAC address changed uses alertMacChange
+  -> .\lib\core\services\alert_rules_engine.dart:65
+PASS: Detection: possible ARP spoofing uses alertArpSpoof
+  -> .\lib\core\services\alert_rules_engine.dart:82
+PASS: Detection: port-scan attempts detected uses alertPortScanAttempts
+  -> .\lib\core\services\alert_rules_engine.dart:102
+
+=== PIPELINE CHECKS ===
+PASS: PostScanPipeline calls AlertRulesEngine().buildEvents(...)
+PASS: PostScanPipeline calls InAppNotifier().notify(...)
+
+=== AUTO-SCAN RESULTS PRODUCER CHECK ===
+WARN: No auto_scan_results producer found
+WARN: Release EXE not found
+
+=== FINAL ===
+FINAL: NOT READY

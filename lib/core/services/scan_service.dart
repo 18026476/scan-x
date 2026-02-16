@@ -19,6 +19,16 @@ import 'dart:convert';
 
 import 'security_ai_service.dart';
 
+ // SCANX_SERVICE_FORMATTER_BEGIN
+ String _scanxFormatService(String s) {
+   final t = s.trim();
+   if (t.endsWith('?')) {
+     final base = t.substring(0, t.length - 1).trim();
+     return base.isEmpty ? t : (base + ' (uncertain)');
+   }
+   return t;
+ }
+ // SCANX_SERVICE_FORMATTER_END
 enum RiskLevel { low, medium, high }
 
 class OpenPort {
@@ -535,6 +545,8 @@ class ScanService {
     return RiskLevel.low;
   }
 }
+
+
 
 
 

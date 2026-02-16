@@ -1,10 +1,65 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'core/widgets/keyboard_stabilizer.dart';
 
 import 'core/services/settings_service.dart';
 import 'features/navigation/main_navigation.dart';
 
+
+
+void _scanxStartupMarkerTempRelease() {
+  String _safeErr(Object e) {
+    try { return e.toString(); } catch (_) { return 'unknown error'; }
+  }
+
+  void _append(String path, String line) {
+    try {
+      final f = File(path);
+      f.parent.createSync(recursive: true);
+      f.writeAsStringSync('$line\n', mode: FileMode.append, flush: true);
+    } catch (_) {}
+  }
+
+  final ts = DateTime.now().toIso8601String();
+  final sep = Platform.pathSeparator;
+
+  // 1) TEMP marker (should be writable)
+  try {
+    final p1 = Directory.systemTemp.path + sep + 'scanx_startup_marker.txt';
+    _append(p1, '[$ts] STARTUP OK (TEMP) :: ' + Platform.operatingSystem);
+  } catch (e) {
+    final p1 = Directory.systemTemp.path + sep + 'scanx_startup_marker.txt';
+    _append(p1, '[$ts] STARTUP FAIL (TEMP) :: ' + _safeErr(e));
+  }
+
+  // 2) EXE DIR marker (may be unwritable; still attempt)
+  try {
+    final exe = Platform.resolvedExecutable;
+    final dir = File(exe).parent.path;
+    final p2 = dir + sep + 'scanx_startup_marker.txt';
+    _append(p2, '[$ts] STARTUP OK (EXEDIR) :: exe=' + exe);
+  } catch (e) {
+    final p1 = Directory.systemTemp.path + sep + 'scanx_startup_marker.txt';
+    _append(p1, '[$ts] STARTUP FAIL (EXEDIR) :: ' + _safeErr(e));
+  }
+}
+void _scanxStartupLogMarker() {
+  try {
+    // Only do this on Windows desktop. Avoid crashing on other platforms.
+    if (!Platform.isWindows) return;
+    final appData = Platform.environment['APPDATA'] ?? '';
+    if (appData.isEmpty) return;
+    final path = '\\\com.example\\scanx_app\\scanx_alerts_debug.log';
+    final file = File(path);
+    file.parent.createSync(recursive: true);
+    final ts = DateTime.now().toIso8601String();
+    file.writeAsStringSync('[\] STARTUP MARKER: main() executed\\n', mode: FileMode.append, flush: true);
+  } catch (_) {}
+}
 Future<void> main() async {
+  _scanxStartupMarkerTempRelease();
+  _scanxStartupLogMarker();
   WidgetsFlutterBinding.ensureInitialized();
   await SettingsService.init();
   runApp(const ScanXApp());
@@ -131,6 +186,8 @@ ThemeData _buildScanXDarkTheme() {
     ),
   );
 }
+
+
 
 
 

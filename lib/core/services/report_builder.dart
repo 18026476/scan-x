@@ -2,6 +2,21 @@
 import 'package:scanx_app/core/services/settings_service.dart';
 import 'package:scanx_app/features/router/router_iot_security.dart';
 
+
+  
+  // SCANX_UNCERTAIN_SERVICE_NOTICE
+  const _scanxUncertainNotice =
+      'Note: A “?” means the service fingerprint is not fully confirmed.';
+// SCANX_UNCERTAIN_SERVICE_HELPER_BEGIN
+  String scanxServiceLabel(String s) {
+    final t = s.trim();
+    if (t.endsWith('?')) {
+      final base = t.substring(0, t.length - 1).trim();
+      return base.isEmpty ? t : (base + ' (uncertain)');
+    }
+    return t;
+  }
+  // SCANX_UNCERTAIN_SERVICE_HELPER_END
 class ReportBuilder {
   /// V16: Canonical report JSON used by PdfReportService.
   ///
@@ -444,6 +459,8 @@ String scanxEnsureCidr(String input) {
   return '/32';
 }
 /* SCANX_V16C_CIDR_END */
+
+
 
 
 
