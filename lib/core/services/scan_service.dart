@@ -1,25 +1,31 @@
 ﻿import 'dart:convert';
-
+import '../analysis/service_confidence.dart';
 import 'dart:async';
+import '../analysis/service_confidence.dart';
 import 'dart:convert';
-
+import '../analysis/service_confidence.dart';
 import 'dart:io';
-
+import '../analysis/service_confidence.dart';
+import 'package:path/path.dart' as p;
 import 'package:wakelock_plus/wakelock_plus.dart';
+import '../analysis/service_confidence.dart';
 import 'package:scanx_app/core/scanner/ip_range.dart';
-
+import '../analysis/service_confidence.dart';
 import 'dart:convert';
-
+import '../analysis/service_confidence.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import '../analysis/service_confidence.dart';
 import 'dart:convert';
-
+import '../analysis/service_confidence.dart';
 import 'settings_service.dart';
+import '../analysis/service_confidence.dart';
 import 'dart:convert';
-
+import '../analysis/service_confidence.dart';
 import 'security_ai_service.dart';
-
- // SCANX_SERVICE_FORMATTER_BEGIN
+import '../analysis/service_confidence.dart';
+import 'package:scanx_app/core/utils/text_sanitizer.dart';
+import '../analysis/service_confidence.dart';
+// SCANX_SERVICE_FORMATTER_BEGIN
  String _scanxFormatService(String s) {
    final t = s.trim();
    if (t.endsWith('?')) {
@@ -76,7 +82,31 @@ class ScanResult {
 }
 
 class ScanService {
-  ScanService._internal();
+  
+  // SCANX_NMAP_BUNDLE_BEGIN
+  // Bundled Nmap resolution for Windows builds.
+  // In Release, bundle is installed to: <exe_dir>\tools\nmap\
+  String _scanxJoin(List<String> parts) =>
+      parts.where((p) => p.trim().isNotEmpty).join(Platform.pathSeparator);
+
+  String? _scanxBundledNmapDir() {
+    if (!Platform.isWindows) return null;
+    try {
+      final exeDir = File(Platform.resolvedExecutable).parent.path;
+      final dir = _scanxJoin([exeDir, 'tools', 'nmap']);
+      final exe = _scanxJoin([dir, 'nmap.exe']);
+      if (File(exe).existsSync()) return dir;
+    } catch (_) {}
+    return null;
+  }
+
+  String _scanxResolveNmapCommand() {
+    final dir = _scanxBundledNmapDir();
+    if (dir != null) return _scanxJoin([dir, 'nmap.exe']);
+    return 'nmap';
+  }
+// SCANX_NMAP_BUNDLE_END
+ScanService._internal();
   static final ScanService _instance = ScanService._internal();
   factory ScanService() => _instance;
 
@@ -361,49 +391,37 @@ class ScanService {
 
   // ---------- Nmap ----------
 
+
   Future<String> _runNmap(List<String> args) async {
+    // Windows portable Nmap: always prefer bundled tools/nmap beside the exe.
+    final exeDir = File(Platform.resolvedExecutable).parent.path;
+    final bundledExe = p.join(exeDir, 'tools', 'nmap', 'nmap.exe');
+    final bundledDir = p.join(exeDir, 'tools', 'nmap');
+
+    final hasBundled = Platform.isWindows && File(bundledExe).existsSync();
+    final cmd = hasBundled ? bundledExe : 'nmap';
+
+    // NSE requires datadir containing scripts/nse_main.lua + nselib
+    final List<String> effectiveArgs = (hasBundled)
+        ? <String>['--datadir', bundledDir, ...args]
+        : args;
+
     final result = await Process.run(
-      'nmap',
-      args,
-      runInShell: true,
-      stdoutEncoding: systemEncoding,
-      stderrEncoding: systemEncoding,
+      cmd,
+      effectiveArgs,
+      runInShell: false,
+      stdoutEncoding: SystemEncoding(),
+      stderrEncoding: SystemEncoding(),
     );
 
+    final out = (result.stdout ?? '').toString();
+    final err = (result.stderr ?? '').toString();
+
     if (result.exitCode != 0) {
-      final stderrStr = (result.stderr ?? '').toString();
-      final lower = stderrStr.toLowerCase();
-      final isPrivilegeError = lower.contains('requires root') ||
-          lower.contains('privileged') ||
-          lower.contains('permission denied') ||
-          lower.contains('packet capture') ||
-          lower.contains('npcap') ||
-          lower.contains('not permitted');
-
-      if (args.contains('-sS') && isPrivilegeError) {
-        final fallbackArgs = List<String>.from(args);
-        fallbackArgs.remove('-sS');
-        if (!fallbackArgs.contains('-sT')) fallbackArgs.insert(0, '-sT');
-
-        final retry = await Process.run(
-          'nmap',
-          fallbackArgs,
-          runInShell: true,
-          stdoutEncoding: systemEncoding,
-          stderrEncoding: systemEncoding,
-        );
-
-        if (retry.exitCode != 0) {
-          throw Exception('nmap failed (exit ${retry.exitCode}): ${(retry.stderr ?? '').toString()}');
-        }
-
-        return _sanitizeText((retry.stdout ?? '').toString());
-      }
-
-      throw Exception('nmap failed (exit ${result.exitCode}): $stderrStr');
+      final details = err.isNotEmpty ? err : out;
+      throw Exception('nmap failed (exit ): ');
     }
-
-    return _sanitizeText((result.stdout ?? '').toString());
+    return out;
   }
 
   String _sanitizeText(String s) {
@@ -498,10 +516,51 @@ class ScanService {
       final portMatch = _portLineRegex.firstMatch(line);
       if (portMatch != null && currentAddress != null) {
         final port = int.tryParse(portMatch.group(1) ?? '') ?? 0;
-        final protocol = portMatch.group(2) ?? 'tcp';
-        final service = portMatch.group(3) ?? '?';
+        final protocol = (portMatch.group(2) ?? 'tcp').trim();
+        final rawService = (portMatch.group(3) ?? '?').trim();
 
-        currentPorts.add(OpenPort(port: port, protocol: protocol, serviceName: service));
+        // Uncertain if Nmap returns "?" or a trailing "?"
+        final bool isUncertain =
+            rawService.isEmpty || rawService == '?' || rawService.endsWith('?');
+
+        // Remove trailing '?' if present
+        String baseService = rawService;
+        if (baseService.endsWith('?')) {
+          baseService = baseService.substring(0, baseService.length - 1);
+        }
+        baseService = baseService.trim();
+
+        // Port -> service fallback (prevents "445/tcp • (Uncertain)" with no label)
+        const fallback = <int, String>{
+          80: 'http',
+          135: 'msrpc',
+          139: 'netbios-ssn',
+          443: 'https',
+          445: 'smb',
+          3389: 'ms-wbt-server',
+          22: 'ssh',
+          21: 'ftp',
+          53: 'domain',
+          25: 'smtp',
+        };
+
+        if (baseService.isEmpty || baseService == '?' || baseService.toLowerCase() == 'unknown') {
+                    baseService = fallback[port] ?? 'unknown';
+        }
+
+        // HARD OVERRIDE for well-known ports (prevents unknown on 445)
+        if (port == 445) {
+          baseService = 'smb';
+        }// ✅ LOCAL variable - fixes the "getter serviceName" compile error
+        final serviceName = isUncertain ? '\ (Uncertain)' : baseService;
+
+        currentPorts.add(
+          OpenPort(
+            port: port,
+            protocol: protocol,
+            serviceName: serviceName,
+          ),
+        );
       }
     }
 
@@ -544,10 +603,22 @@ class ScanService {
     if (hasMedium) return RiskLevel.medium;
     return RiskLevel.low;
   }
+
+  ServiceConfidenceResult _evaluateServiceConfidence({
+    required bool portOpen,
+    required String serviceName,
+    required String version,
+    required String rawOutput,
+  }) {
+    return ServiceConfidenceEngine.evaluate(
+      portOpen: portOpen,
+      serviceName: serviceName,
+      version: version,
+      scriptOutput: rawOutput,
+    );
+  }
+
 }
-
-
-
 
 
 

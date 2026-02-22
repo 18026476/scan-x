@@ -3,6 +3,8 @@ import 'package:scanx_app/core/services/scan_service.dart';
 import 'package:scanx_app/core/services/scan_snapshot_store.dart';
 import 'package:scanx_app/core/services/alert_rules_engine.dart';
 import 'package:scanx_app/core/services/in_app_notifier.dart';
+import 'package:scanx_app/core/services/settings_service.dart';
+import 'package:scanx_app/features/router/router_iot_security.dart';
 
 
 import 'package:scanx_app/core/utils/scanx_debug_log.dart';
@@ -70,13 +72,67 @@ class PostScanPipeline {
     );
 
     
-    ScanxDebugLog.write('PSC eventsBuilt count=' + events.length.toString());await store.save(result: result, ipToMac: ipToMac);
+    
+
+    // ---- SCANX Notification wiring (Router/IoT) BEGIN ----
+    // These toggles were UI-only. We make them functional by generating alert events
+    // from the existing RouterIotSecurityService summary.
+    final s = SettingsService();
+
+    if (s.notifyRouterVuln || s.notifyIotWarning) {
+      try {
+        final summary = RouterIotSecurityService().buildSummary(result.hosts);
+
+        final routerIssues = summary.issues.where((i) =>
+            i.type == RouterIotIssueType.riskyRouterPorts ||
+            i.type == RouterIotIssueType.possibleUpnp ||
+            i.type == RouterIotIssueType.possibleWps ||
+            i.type == RouterIotIssueType.possibleDnsHijack ||
+            i.type == RouterIotIssueType.routerWeakPasswordAdvisory ||
+            i.type == RouterIotIssueType.routerOutdatedFirmwareAdvisory).toList();
+
+        final iotIssues = summary.issues.where((i) =>
+            i.type == RouterIotIssueType.iotHighRisk ||
+            i.type == RouterIotIssueType.iotMediumRisk ||
+            i.type == RouterIotIssueType.iotOutdatedFirmwareAdvisory ||
+            i.type == RouterIotIssueType.iotDefaultPasswordsAdvisory ||
+            i.type == RouterIotIssueType.iotVulnDbAdvisory ||
+            i.type == RouterIotIssueType.iotAutoRecommendations).toList();
+
+        if (s.notifyRouterVuln && routerIssues.isNotEmpty) {
+          final top = routerIssues.first;
+          events.add(AlertEvent(
+            type: AlertType.highRiskFindings,
+            severity: AlertSeverity.high,
+            title: 'Router security warning',
+            message: top.description,
+            evidence: 'Router issue: ',
+          ));
+        }
+
+        if (s.notifyIotWarning && iotIssues.isNotEmpty) {
+          final top = iotIssues.first;
+          events.add(AlertEvent(
+            type: AlertType.highRiskFindings,
+            severity: AlertSeverity.medium,
+            title: 'IoT security warning',
+            message: top.description,
+            evidence: 'IoT issue: ',
+          ));
+        }
+      } catch (e) {
+        // Keep pipeline stable; no crash in release.
+      }
+    }
+    // ---- SCANX Notification wiring (Router/IoT) END ----
+ScanxDebugLog.write('PSC eventsBuilt count=' + events.length.toString());await store.save(result: result, ipToMac: ipToMac);
     if (!context.mounted) return;
     ScanxDebugLog.write('PSC notify START');
     await InAppNotifier().notify(context, events, isAutoScan: isAutoScan);
   
     ScanxDebugLog.write('PSC notify END');}
 }
+
 
 
 

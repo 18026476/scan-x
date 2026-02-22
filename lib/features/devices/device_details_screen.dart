@@ -7,14 +7,34 @@ import 'package:scanx_app/core/services/security_ai_service.dart';
 
 import 'package:scanx_app/core/utils/text_sanitize.dart';
 
-  // SCANX_UNCERTAIN_SERVICE_HELPER_BEGIN
+        // SCANX_UNCERTAIN_SERVICE_HELPER_BEGIN
   String scanxServiceLabel(String s) {
     final t = s.trim();
+    if (t.isEmpty || t == '?' || t.toLowerCase() == 'unknown') return 'unknown (Uncertain)';
+
+    // Normalize trailing '?' -> "(Uncertain)"
     if (t.endsWith('?')) {
       final base = t.substring(0, t.length - 1).trim();
-      return base.isEmpty ? t : (base + ' (uncertain)');
+      return base.isEmpty ? 'unknown (Uncertain)' : ' (Uncertain)';
     }
+
+    // Normalize "(uncertain)" casing
+    if (t.toLowerCase().endsWith('(uncertain)')) {
+      final base = t.substring(0, t.length - '(uncertain)'.length).trim();
+      return base.isEmpty ? 'unknown (Uncertain)' : ' (Uncertain)';
+    }
+
     return t;
+  }
+
+  // Port-aware display override (THIS is the 445 fix)
+  String scanxDisplayService(int port, String serviceName) {
+    final t = serviceName.trim();
+    final isUnknown = t.isEmpty || t == '?' || t.toLowerCase().startsWith('unknown');
+
+    if (port == 445 && isUnknown) return 'smb (Uncertain)';
+
+    return scanxServiceLabel(serviceName);
   }
   // SCANX_UNCERTAIN_SERVICE_HELPER_END
 class DeviceDetailsScreen extends StatelessWidget {
@@ -115,7 +135,7 @@ class DeviceDetailsScreen extends StatelessWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        '${p.port}/${p.protocol} \u2022 ${scanxServiceLabel(p.serviceName)}',
+                        '${p.port}/${p.protocol} \u2022 ${scanxDisplayService(p.port, p.serviceName)}',
                         style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
                       ),
                     ),
@@ -237,6 +257,11 @@ class DeviceDetailsScreen extends StatelessWidget {
     );
   }
 }
+
+
+
+
+
 
 
 

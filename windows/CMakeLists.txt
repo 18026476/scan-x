@@ -1,4 +1,4 @@
-# Project-level configuration.
+﻿# Project-level configuration.
 cmake_minimum_required(VERSION 3.14)
 project(scanx_app LANGUAGES CXX)
 
@@ -106,3 +106,16 @@ install(DIRECTORY "${PROJECT_BUILD_DIR}/${FLUTTER_ASSET_DIR_NAME}"
 install(FILES "${AOT_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"
   CONFIGURATIONS Profile;Release
   COMPONENT Runtime)
+
+
+# SCANX_NMAP_BUNDLE_BEGIN
+# Bundle Nmap into the Windows build output (tools/nmap beside the exe).
+set(SCANX_NMAP_DIR "${CMAKE_CURRENT_SOURCE_DIR}/runner/Resources/nmap")
+if(EXISTS "${SCANX_NMAP_DIR}/nmap.exe")
+  install(DIRECTORY "${SCANX_NMAP_DIR}"
+    DESTINATION "${CMAKE_INSTALL_PREFIX}/tools"
+    COMPONENT Runtime)
+endif()
+# SCANX_NMAP_BUNDLE_END
+
+
