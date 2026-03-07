@@ -1,0 +1,1 @@
+﻿Nmap not bundled (LocalNmapDir missing/invalid). Use -SmokeOnly or pass -LocalNmapDir.

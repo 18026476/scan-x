@@ -1,0 +1,2 @@
+﻿AppExe: C:\Users\Acer\scanx\scan-x\scanx_final_gate_20260225_034022\work\scanx_app.exe
+AppDir: C:\Users\Acer\scanx\scan-x\scanx_final_gate_20260225_034022\work

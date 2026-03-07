@@ -46,3 +46,10 @@ app.*.map.json
 # Local scripts
 patch_settings_service_theme_listenable.ps1
 
+dist/
+release_test_logs/
+release_audit_*/
+.scanx_backups/
+backups/
+*.tmp
+*.bak

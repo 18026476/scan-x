@@ -1,0 +1,10 @@
+﻿### event log
+ERROR: No events were found that match the specified selection criteria.
+Get-WinEvent : No events were found that match the specified selection criteria.
+At line:2 char:3
++   Get-WinEvent -FilterHashtable @{ LogName='Application'; StartTime=$ ...
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (:) [Get-WinEvent], Exception
+    + FullyQualifiedErrorId : NoMatchingEventsFound,Microsoft.PowerShell.Commands.GetWinEventCommand
+ 
+

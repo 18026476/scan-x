@@ -1,0 +1,2 @@
+﻿ExePath: C:\Users\Acer\scanx\scan-x\scanx_release_audit_20260225_030959\work\scanx_app.exe
+ExeDir: C:\Users\Acer\scanx\scan-x\scanx_release_audit_20260225_030959\work

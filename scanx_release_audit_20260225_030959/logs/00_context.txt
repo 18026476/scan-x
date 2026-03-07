@@ -1,0 +1,5 @@
+﻿ZipPath: C:\Users\Acer\scanx\scan-x\SCANX_Windows_Release_20260208_230615.zip
+Time: 02/25/2026 03:09:59
+Host: DESKTOP-9O98KH1
+User: Acer
+PS: 5.1.26100.7705
