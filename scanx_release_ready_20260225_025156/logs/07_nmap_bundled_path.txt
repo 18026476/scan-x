@@ -1,1 +1,0 @@
-﻿Bundled nmap.exe at: C:\Users\Acer\scanx\scan-x\build\windows\x64\runner\Release\tools\nmap\nmap.exe

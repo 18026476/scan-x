@@ -1,5 +1,0 @@
-﻿ZipPath: C:\Users\Acer\scanx\scan-x\scan-x_review_package_20260225_014516.zip
-Time: 02/25/2026 02:55:56
-Host: DESKTOP-9O98KH1
-User: Acer
-PS: 5.1.26100.7705

@@ -1,4 +1,0 @@
-﻿### start scanx_app.exe
-Started: 02/25/2026 03:40:24
-Ended:   02/25/2026 03:40:44
-PID=11540 Exited=True ExitCode=-1

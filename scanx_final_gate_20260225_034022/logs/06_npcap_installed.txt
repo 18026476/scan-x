@@ -1,4 +1,0 @@
-﻿### installed products (registry)
-Started: 02/25/2026 03:40:23
-Ended:   02/25/2026 03:40:24
-@{DisplayName=Npcap; DisplayVersion=1.83; Publisher=Nmap Project; InstallDate=}

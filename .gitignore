@@ -53,3 +53,9 @@ release_audit_*/
 backups/
 *.tmp
 *.bak
+scanx_release_audit_*/
+scanx_release_ready_*/
+scanx_final_gate_*/
+scanx_bundle_nmap_*/
+*.zip
+*.xml
