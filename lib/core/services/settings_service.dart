@@ -638,9 +638,36 @@ class ScanSettings {
       autoQuickScanOnStartup ?? this.autoQuickScanOnStartup,
     );
   }
+
+
+  // ---- SCAN-X safe release runtime getters ----
+  bool get autoStartOnBoot => false;
+  bool get autoScanOnLaunch => false;
+  bool get keepScreenAwake => true;
+
+  bool get autoUpdateApp => false;
+  bool get notifyBeforeUpdate => true;
+  bool get betaUpdates => false;
+
+  int get logRetentionDays => 42;
+  bool get anonymousUsageAnalytics => false;
+
+  bool get continuousMonitoring => false;
+  int get scanFrequency => 0;
+  int get performanceMode => 1;
+
+  bool get notifyNewDevice => true;
+  bool get notifyUnknownDevice => true;
+  bool get notifyRouterVuln => true;
+  bool get notifyIotWarning => true;
+  bool get notifyHighRisk => true;
+  bool get notifyScanCompleted => true;
+  bool get notifyAutoScanResults => true;
+
+  bool get packetSnifferLite => false;
+  bool get wifiDeauthDetection => false;
+  bool get rogueApDetection => false;
+  bool get hiddenSsidDetection => false;
+  // ---- SCAN-X safe release runtime getters end ----
+
 }
-
-
-
-
-

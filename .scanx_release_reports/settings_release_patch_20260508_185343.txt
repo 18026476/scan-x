@@ -1,0 +1,22 @@
+SCAN-X RELEASE SETTINGS PATCH STARTED: 20260508_185343
+Root: C:\Users\Acer\scanx\scan-x
+Disabled duplicate legacy lib/settings_screen.dart
+Created WindowsStartupService
+Created LogRetentionService
+Created AnonymousAnalyticsService
+Created AppUpdateService
+Created MonitoringSchedulerService
+Created ReleaseSettingsCoordinator
+Patched SettingsService release getters
+Patched main.dart startup coordinator
+Created verify_scanx_settings_release_gate.ps1
+
+Running flutter pub get...
+
+Running flutter analyze...
+
+Running release gate verifier...
+
+PATCH COMPLETE
+Backup saved to: C:\Users\Acer\scanx\scan-x\release_settings_backup_20260508_185343
+Report saved to: C:\Users\Acer\scanx\scan-x\.scanx_release_reports\settings_release_patch_20260508_185343.txt

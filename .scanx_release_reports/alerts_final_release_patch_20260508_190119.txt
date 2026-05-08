@@ -1,0 +1,24 @@
+SCAN-X FINAL ALERTS RELEASE PATCH STARTED: 20260508_190119
+Root: C:\Users\Acer\scanx\scan-x
+Moved analyzer-noise folder: __patch_backups__
+Moved analyzer-noise folder: _patch_backups
+Moved analyzer-noise folder: release_audit_20260225_014516
+Moved analyzer-noise folder: scanx_release_audit_20260225_030959
+Moved analyzer-noise folder: scanx_final_gate_20260225_034022
+Moved analyzer-noise folder: scanx_release_ready_20260225_025156
+Moved analyzer-noise folder: scanx_release_ready_20260225_025556
+Moved analyzer-noise folder: scanx_bundle_nmap_20260225_031822
+Moved analyzer-noise folder: scanx_bundle_nmap_20260225_032600
+Patched alert_rules_engine.dart with notifyNewDevice + notifyUnknownDevice runtime gates
+Patched in_app_notifier.dart
+Created verify_scanx_alerts_final_release.ps1
+
+Running flutter pub get...
+
+Running flutter analyze...
+
+Running final alerts verifier...
+
+PATCH COMPLETE
+Backup: C:\Users\Acer\scanx\scan-x\alerts_final_backup_20260508_190119
+Report: C:\Users\Acer\scanx\scan-x\.scanx_release_reports\alerts_final_release_patch_20260508_190119.txt

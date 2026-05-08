@@ -1,151 +1,277 @@
-﻿import 'package:scanx_app/core/services/scan_service.dart';
-import 'package:scanx_app/core/services/settings_service.dart';
-
-enum AlertSeverity { info, low, medium, high, critical }
+﻿import 'package:scanx_app/core/services/settings_service.dart';
+import 'package:scanx_app/core/services/scan_service.dart';
 
 enum AlertType {
   newDevice,
-  macChanged,
-  possibleArpSpoof,
-  portExposureSpike,
+  unknownDevice,
+  routerVulnerability,
+  iotWarning,
+  highRisk,
   highRiskFindings,
   scanCompleted,
+  macChange,
+  macChanged,
+  arpSpoof,
+  possibleArpSpoof,
+  portExposure,
+  portExposureSpike,
+}
+
+enum AlertSeverity {
+  info,
+  medium,
+  high,
 }
 
 class AlertEvent {
-  @override
-  String toString() => title;
-
   final AlertType type;
   final AlertSeverity severity;
   final String title;
   final String message;
-  final String? deviceIp;
   final String? evidence;
+  final DateTime createdAt;
 
-  const AlertEvent({
+  AlertEvent({
     required this.type,
     required this.severity,
     required this.title,
     required this.message,
-    this.deviceIp,
     this.evidence,
-  });
+    DateTime? createdAt,
+  }) : createdAt = createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+}
+
+class ScanxAlertEvent extends AlertEvent {
+  final String id;
+
+  ScanxAlertEvent({
+    required this.id,
+    required AlertType type,
+    required AlertSeverity alertSeverity,
+    required String title,
+    required String message,
+    String? evidence,
+    required DateTime createdAt,
+  }) : super(
+          type: type,
+          severity: alertSeverity,
+          title: title,
+          message: message,
+          evidence: evidence,
+          createdAt: createdAt,
+        );
+
+  factory ScanxAlertEvent.simple({
+    required String id,
+    required String title,
+    required String message,
+    required String severity,
+    required DateTime createdAt,
+    AlertType type = AlertType.highRiskFindings,
+    String? evidence,
+  }) {
+    return ScanxAlertEvent(
+      id: id,
+      type: type,
+      alertSeverity: severity == 'high'
+          ? AlertSeverity.high
+          : severity == 'info'
+              ? AlertSeverity.info
+              : AlertSeverity.medium,
+      title: title,
+      message: message,
+      evidence: evidence,
+      createdAt: createdAt,
+    );
+  }
 }
 
 class AlertRulesEngine {
+  AlertRulesEngine({SettingsService? settings})
+      : _settings = settings ?? SettingsService();
+
+  final SettingsService _settings;
+
   List<AlertEvent> buildEvents({
-    required ScanResult current,
-    required Map<String, dynamic>? previousSnapshot,
-    required Map<String, String> currentIpToMac,
+    dynamic currentHosts,
+    dynamic current,
+    dynamic previousHosts,
+    dynamic previousSnapshot,
+    dynamic currentIpToMac,
+    bool scanCompleted = true,
+    bool autoScan = false,
   }) {
-    final s = SettingsService();
-
-    final prevDevices = (previousSnapshot?['devices'] as Map?)?.cast<String, dynamic>() ?? <String, dynamic>{};
-    final prevIpSet = prevDevices.keys.toSet();
-    final currentIps = current.hosts.map((h) => h.address).toSet();
-
+    final hosts = _extractHosts(currentHosts ?? current);
+    final previous = _extractHosts(previousHosts ?? previousSnapshot);
     final events = <AlertEvent>[];
+    final now = DateTime.now();
 
-    final sens = s.alertSensitivity.round().clamp(0, 2);
-    final portSpikeThreshold = sens == 0 ? 10 : (sens == 1 ? 6 : 4);
-    final highRiskNotifyMin = sens == 0 ? 2 : 1;
+    final previousByAddress = {
+      for (final host in previous) host.address: host,
+    };
 
-    if (s.alertNewDevice) {
-      final newIps = currentIps.difference(prevIpSet);
-      for (final ip in newIps) {
-        events.add(AlertEvent(
-          type: AlertType.newDevice,
-          severity: AlertSeverity.medium,
-          title: 'New device detected',
-          message: 'A new device appeared on your network.',
-          deviceIp: ip,
-          evidence: 'IP $ip was not present in the previous snapshot.',
-        ));
-      }
-    }
-
-    if (s.alertMacChange) {
-      for (final ip in currentIps.intersection(prevIpSet)) {
-        final prevMac = ((prevDevices[ip] as Map?)?['mac'] ?? '').toString().toLowerCase();
-        final nowMac = (currentIpToMac[ip] ?? '').toLowerCase();
-        if (prevMac.isNotEmpty && nowMac.isNotEmpty && prevMac != nowMac) {
-          events.add(AlertEvent(
-            type: AlertType.macChanged,
-            severity: AlertSeverity.high,
-            title: 'Device MAC changed',
-            message: 'A device on the same IP address has a different MAC than before.',
-            deviceIp: ip,
-            evidence: 'Previous MAC $prevMac †’ Current MAC $nowMac',
-          ));
+    if (_settings.alertNewDevice && _settings.notifyNewDevice) {
+      for (final host in hosts) {
+        if (!previousByAddress.containsKey(host.address)) {
+          events.add(
+            ScanxAlertEvent.simple(
+              id: 'new_device_${host.address}_${now.millisecondsSinceEpoch}',
+              type: AlertType.newDevice,
+              title: 'New device detected',
+              message:
+                  'A new device was found on your network: ${host.hostname ?? host.address}.',
+              severity: 'medium',
+              createdAt: now,
+            ),
+          );
         }
       }
     }
 
-    if (s.alertArpSpoof) {
-      final macToIps = <String, List<String>>{};
-      currentIpToMac.forEach((ip, mac) {
-        final m = mac.toLowerCase();
-        if (m.isEmpty) return;
-        macToIps.putIfAbsent(m, () => <String>[]).add(ip);
-      });
+    if (_settings.notifyUnknownDevice) {
+      for (final host in hosts) {
+        final hostname = (host.hostname ?? '').trim().toLowerCase();
+        final hasName = hostname.isNotEmpty &&
+            hostname != 'unknown' &&
+            hostname != 'unknown device';
 
-      final suspicious = macToIps.entries.where((e) => e.value.length >= 2);
-      for (final e in suspicious) {
-        events.add(AlertEvent(
-          type: AlertType.possibleArpSpoof,
-          severity: AlertSeverity.high,
-          title: 'Possible ARP spoofing',
-          message: 'The same MAC address appears on multiple IPs.',
-          evidence: 'MAC ${e.key} seen on IPs: ${e.value.join(", ")}',
-        ));
-      }
-    }
-
-    if (s.alertPortScanAttempts && previousSnapshot != null) {
-      for (final h in current.hosts) {
-        final prev = (prevDevices[h.address] as Map?)?.cast<String, dynamic>();
-        final prevOpen = (prev?['openPorts'] is int)
-            ? prev!['openPorts'] as int
-            : int.tryParse('${prev?['openPorts'] ?? 0}') ?? 0;
-
-        final nowOpen = h.openPorts.length;
-        final delta = nowOpen - prevOpen;
-        if (delta >= portSpikeThreshold) {
-          events.add(AlertEvent(
-            type: AlertType.portExposureSpike,
-            severity: AlertSeverity.medium,
-            title: 'Port exposure spike detected',
-            message: 'A device suddenly shows many more open ports than the last scan.',
-            deviceIp: h.address,
-            evidence: 'Open ports increased from $prevOpen †’ $nowOpen (Î” $delta)',
-          ));
+        if (!hasName) {
+          events.add(
+            ScanxAlertEvent.simple(
+              id: 'unknown_device_${host.address}_${now.millisecondsSinceEpoch}',
+              type: AlertType.unknownDevice,
+              title: 'Unknown device detected',
+              message:
+                  'SCAN-X found an unknown or unnamed device at ${host.address}.',
+              severity: 'medium',
+              createdAt: now,
+            ),
+          );
         }
       }
     }
 
-    final highRiskCount = current.hosts.where((h) => h.risk == RiskLevel.high).length;
-    if (s.notifyHighRisk && highRiskCount >= highRiskNotifyMin) {
-      events.add(AlertEvent(
-        type: AlertType.highRiskFindings,
-        severity: AlertSeverity.high,
-        title: 'High-risk devices found',
-        message: 'Your scan detected $highRiskCount high-risk device(s).',
-        evidence: 'Risk is based on scan scoring + open ports/services (where available).',
-      ));
+    if (_settings.alertMacChange) {
+      for (final host in hosts) {
+        final oldHost = previousByAddress[host.address];
+        if (oldHost == null) continue;
+
+        final oldName = oldHost.hostname ?? '';
+        final newName = host.hostname ?? '';
+
+        if (oldName.isNotEmpty && newName.isNotEmpty && oldName != newName) {
+          events.add(
+            ScanxAlertEvent.simple(
+              id: 'mac_changed_${host.address}_${now.millisecondsSinceEpoch}',
+              type: AlertType.macChanged,
+              title: 'Device identity changed',
+              message:
+                  'Device ${host.address} changed identity from "$oldName" to "$newName".',
+              severity: 'medium',
+              createdAt: now,
+            ),
+          );
+        }
+      }
     }
 
-    if (s.notifyScanCompleted) {
-      events.add(AlertEvent(
-        type: AlertType.scanCompleted,
-        severity: AlertSeverity.info,
-        title: 'Scan completed',
-        message: 'Scan completed for ${current.target}',
-        evidence: 'Hosts: ${current.hosts.length}',
-      ));
+    if (_settings.alertArpSpoof) {
+      final hostnameGroups = <String, List<DetectedHost>>{};
+
+      for (final host in hosts) {
+        final hostname = (host.hostname ?? '').trim().toLowerCase();
+        if (hostname.isEmpty || hostname == 'unknown') continue;
+        hostnameGroups.putIfAbsent(hostname, () => <DetectedHost>[]).add(host);
+      }
+
+      for (final entry in hostnameGroups.entries) {
+        if (entry.value.length > 1) {
+          events.add(
+            ScanxAlertEvent.simple(
+              id: 'arp_spoof_${entry.key}_${now.millisecondsSinceEpoch}',
+              type: AlertType.possibleArpSpoof,
+              title: 'Possible ARP spoofing detected',
+              message:
+                  'Multiple devices appear to share the same hostname: ${entry.key}.',
+              severity: 'high',
+              createdAt: now,
+            ),
+          );
+        }
+      }
+    }
+
+    if (_settings.alertPortScanAttempts) {
+      final sensitivity = _settings.alertSensitivity;
+      final threshold = sensitivity >= 2 ? 3 : 5;
+
+      for (final host in hosts) {
+        if (host.openPorts.length >= threshold) {
+          events.add(
+            ScanxAlertEvent.simple(
+              id: 'port_exposure_${host.address}_${now.millisecondsSinceEpoch}',
+              type: AlertType.portExposureSpike,
+              title: 'Port exposure spike detected',
+              message:
+                  '${host.address} has ${host.openPorts.length} open ports. Review this device.',
+              severity: host.openPorts.length >= 8 ? 'high' : 'medium',
+              createdAt: now,
+            ),
+          );
+        }
+      }
+    }
+
+    if (_settings.notifyHighRisk) {
+      for (final host in hosts) {
+        if (host.risk == RiskLevel.high) {
+          events.add(
+            ScanxAlertEvent.simple(
+              id: 'high_risk_${host.address}_${now.millisecondsSinceEpoch}',
+              type: AlertType.highRiskFindings,
+              title: 'High-risk device found',
+              message:
+                  '${host.hostname ?? host.address} was rated as high risk.',
+              severity: 'high',
+              createdAt: now,
+            ),
+          );
+        }
+      }
+    }
+
+    if (scanCompleted && _settings.notifyScanCompleted) {
+      events.add(
+        ScanxAlertEvent.simple(
+          id: 'scan_completed_${now.millisecondsSinceEpoch}',
+          type: AlertType.scanCompleted,
+          title: autoScan ? 'Auto scan completed' : 'Scan completed',
+          message: 'SCAN-X finished scanning ${hosts.length} device(s).',
+          severity: 'info',
+          createdAt: now,
+        ),
+      );
     }
 
     return events;
+  }
+
+  List<DetectedHost> _extractHosts(dynamic value) {
+    if (value == null) return <DetectedHost>[];
+
+    if (value is ScanResult) {
+      return value.hosts;
+    }
+
+    if (value is List<DetectedHost>) {
+      return value;
+    }
+
+    if (value is Iterable<DetectedHost>) {
+      return value.toList();
+    }
+
+    return <DetectedHost>[];
   }
 }
 

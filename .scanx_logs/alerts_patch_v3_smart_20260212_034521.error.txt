@@ -1,1 +1,0 @@
-﻿flutter build windows --release failed (exit code 1).

@@ -1,13 +1,19 @@
 ﻿import 'dart:io';
+import 'package:scanx_app/core/release_runtime/release_settings_coordinator.dart';
 import 'package:flutter/material.dart';
+import 'package:scanx_app/core/release_runtime/release_settings_coordinator.dart';
 import 'package:flutter/foundation.dart';
+import 'package:scanx_app/core/release_runtime/release_settings_coordinator.dart';
 import 'core/widgets/keyboard_stabilizer.dart';
 
+import 'package:scanx_app/core/release_runtime/release_settings_coordinator.dart';
 import 'core/services/settings_service.dart';
+import 'package:scanx_app/core/release_runtime/release_settings_coordinator.dart';
 import 'features/navigation/main_navigation.dart';
 
 
 
+import 'package:scanx_app/core/release_runtime/release_settings_coordinator.dart';
 void _scanxStartupMarkerTempRelease() {
   String _safeErr(Object e) {
     try { return e.toString(); } catch (_) { return 'unknown error'; }
@@ -62,6 +68,7 @@ Future<void> main() async {
   _scanxStartupLogMarker();
   WidgetsFlutterBinding.ensureInitialized();
   await SettingsService.init();
+  await ReleaseSettingsCoordinator.applyOnStartup();
   runApp(const ScanXApp());
 }
 
@@ -186,6 +193,10 @@ ThemeData _buildScanXDarkTheme() {
     ),
   );
 }
+
+
+
+
 
 
 
